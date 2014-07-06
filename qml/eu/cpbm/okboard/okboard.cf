@@ -1,7 +1,7 @@
 # default configuration (can be overriden in ~/.config/okboard)
 
 [main]
-# the following are initialized by predict.py
+# the following are initialized by okboard.py & predict.py
 #log = 
 #debug = 
 #score_predict = 
