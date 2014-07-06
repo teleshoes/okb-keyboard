@@ -1,0 +1,5 @@
+module eu.cpbm.okboard
+plugin curveplugin
+CurveKeyboardBase 1.0 CurveKeyboardBase.qml
+Gribouille 1.0 Gribouille.qml
+PredictList 1.0 PredictList.qml
