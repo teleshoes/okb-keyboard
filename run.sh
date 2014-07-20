@@ -20,8 +20,11 @@ cat "$mydir/server.conf" | sed 's+^paths=.*+paths='"$mydir/plugin"'+' | tee "$co
 [ -f "$conffile" ] || die "Configuration file not found: $conffile"
 
 # environment
+OKBOARD_TEST_DIR=/tmp  # let's use /tmp (beware of tmpfs ram usage)
+[ -f "$HOME/.okboard-test" ] && . $HOME/.okboard-test
 export QML2_IMPORT_PATH="$mydir/qml"
-export OKBOARD_TEST=1
+export OKBOARD_TEST_DIR
+echo "Test directory: $OKBOARD_TEST_DIR"
 
 # link to okb-engine C++ plugin
 qmldir="$mydir/qml/eu/cpbm/okboard"
@@ -37,10 +40,13 @@ JS="/usr/share/maliit/plugins/com/jolla/$N"
 # symlink to python stuff (avoids declaring new paths)
 [ -L "predict.py" ] || ln -svf "$ENGINE/predict.py" "$qmldir/"
 
+# symlink to default preference
+[ -L "$qmldir/okboard.cf" ] || ln -svf "$ENGINE/okboard.cf" "$qmldir/okboard.cf"
+
 # check data directory
 if [ -d "$ENGINE/db" ] ; then
     find "$ENGINE/db/" -name '*.tre' | grep '^' >/dev/null || die "$ENGINE/db must contains some .tre & .db files"
-    rsync -rtOv "$ENGINE/db/" "/tmp/" # let's use /tmp (beware of tmpfs ram usage)
+    rsync -rtOv "$ENGINE/db/" "$OKBOARD_TEST_DIR/" 
 fi
 
 # restart maliit

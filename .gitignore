@@ -3,4 +3,8 @@ touchpointarray.js
 libcurveplugin.so
 predict.py
 __pycache__
+okboard-settings
+build
+okboard.cf
+.ropeproject
 

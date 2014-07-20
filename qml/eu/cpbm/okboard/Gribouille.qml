@@ -83,11 +83,15 @@ Canvas {
             }
         }
         onSurroundingTextChanged: {
-            if (MInputMethodQuick.surroundingTextValid) {
-                py.call("okboard.k.update_surrounding", [ MInputMethodQuick.surroundingText, MInputMethodQuick.cursorPosition ])
-            } else {
-                py.call("okboard.k.update_surrounding", [ "", -1 ])
-            }
+            update_surrounding()
+        }
+    }
+
+    function update_surrounding() {
+        if (MInputMethodQuick.surroundingTextValid) {
+            py.call("okboard.k.update_surrounding", [ MInputMethodQuick.surroundingText, MInputMethodQuick.cursorPosition ])
+        } else {
+            py.call("okboard.k.update_surrounding", [ "", -1 ])
         }
     }
 
@@ -111,6 +115,7 @@ Canvas {
         apply_configuration(result)
         console.log('configuration OK');
 
+        update_surrounding()
     }
 
     function apply_configuration(conf) {
@@ -133,7 +138,7 @@ Canvas {
             local_dir = conf['local_dir'];
             
             // log
-            var logfile = (conf['log'])?local_dir + "/curvekb.log":"";
+            var logfile = (conf['log'])?local_dir + "/curve.log":"";
             curveimpl.setLogFile(logfile);
 
             // debug
@@ -249,7 +254,12 @@ Canvas {
         var _get_config = false;
 
         // update layout
+        if (layout.substr(-4) == ".qml") {
+            layout = layout.substr(0, layout.length - 4);
+        }
         if (layout != curve.layout) {
+            _get_config = true;
+            /* QQQ
             if (layout.substr(-4) == ".qml") {
                 layout = layout.substr(0, layout.length - 4);
             }
@@ -259,6 +269,7 @@ Canvas {
             curve.layout = layout;
 
             keys_ok = false; // must reload keys position
+            */
         }
 
         // update prediction language & orientation
@@ -272,7 +283,20 @@ Canvas {
         console.log("updateContext: layout =", layout, "orientation =", orientation, "get_config =", _get_config)
 
         py.call("okboard.k.set_context", [ layout, orientation ]);  // this triggers predict db loading
-        if (_get_config) { get_config(); }
+        if (_get_config) {
+            py.call("okboard.k.get_config", [ true ], function(result) { 
+                apply_configuration(result); 
+                if (layout != curve.layout) {
+                    var filename = local_dir + "/" + layout + ".tre";
+                    console.log("Loading word tree: " + filename);
+                    curve.ok = curveimpl.loadTree(filename);
+                    curve.layout = layout;
+                    
+                    keys_ok = false; // must reload keys position
+                }
+            })
+        }
+
     }
 
     function loadKeys(keys) {
@@ -313,8 +337,16 @@ Canvas {
 
         // Add new word as preedit
         if (text.length > 0) {
-            MInputMethodQuick.sendPreedit(text, undefined);
-            keyboard.inputHandler.preedit = text;
+            if (replace) {
+                var old = keyboard.inputHandler.preedit
+                MInputMethodQuick.sendCommit(text)
+                MInputMethodQuick.sendPreedit("", undefined);
+                keyboard.inputHandler.preedit = "";
+                py.call("okboard.k.replace_word", [ old, text ])
+            } else {
+                MInputMethodQuick.sendPreedit(text, undefined);
+                keyboard.inputHandler.preedit = text;
+            }
             
             curvepreedit = false // ugly hack :) (force a "onCompleted" on the word prediction list)
             curvepreedit = ! replace;

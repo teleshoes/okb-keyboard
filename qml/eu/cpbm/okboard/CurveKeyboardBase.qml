@@ -365,7 +365,7 @@ Item {
         }
         languageSwitchTimer.stop()
         if (inCurve) {
-            if (! keyboard.keys_ok) {
+            if (! curve.keys_ok) {
                 dumpKeys();
             }
             curve.done(disablePopper)

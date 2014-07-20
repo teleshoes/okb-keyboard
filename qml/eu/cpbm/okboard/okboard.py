@@ -7,17 +7,19 @@ try: import pyotherside
 except: pyotherside = None
 
 import os
-import time
-import re
 import traceback
 import configparser as ConfigParser
 import json
+import gzip
+import shutil
 
 from predict import Predict
 
 mybool = lambda x: False if str(x).lower() in [ "0", "false", "no", "off", "" ] else True
 
 class Okboard:
+    SHARE_PATH = "/usr/share/okboard"
+
     def __init__(self):
         self.lang = None
         self.predict = Predict(self)
@@ -31,6 +33,7 @@ class Okboard:
         self.get_predict_words = self.exception_wrapper(self.predict.get_predict_words)
         self.update_preedit = self.exception_wrapper(self.predict.update_preedit)
         self.cleanup = self.exception_wrapper(self.predict.cleanup)
+        self.replace_word = self.exception_wrapper(self.predict.replace_word)
 
         self.set_context = self.exception_wrapper(self._set_context)
         self.get_config = self.exception_wrapper(self._get_config)
@@ -47,32 +50,36 @@ class Okboard:
             try:
                 return func(*params, **kwargs)
             except Exception as e:
-                for m in [ "Exception in function %s: %s" % (func.__qualname__, e), 
+                for m in [ "Exception in function %s: %s" % (func.__qualname__, e),
                            traceback.format_exc() ]:
                     print(m)
-                    self.log(m)
+                    try: self.log(m)
+                    except: pass
                 raise e
         return wrapper
 
     def _init(self):
         # init path
-        test_mode = os.environ.get("OKBOARD_TEST", None)
-        if not test_mode or test_mode.lower() in [ "0", "false" ]:
+        test_dir = os.environ.get("OKBOARD_TEST_DIR", None)
+        if not test_dir or test_dir.lower() in [ "0", "false" ]:
             # production mode
             self.config_dir = os.path.join(os.path.expanduser('~'), ".config/okboard")
             self.local_dir = os.path.join(os.path.expanduser('~'), ".local/share/okboard")
             if not os.path.isdir(self.config_dir): os.makedirs(self.config_dir)
             if not os.path.isdir(self.local_dir): os.makedirs(self.local_dir)
+            test_mode = False
         else:
             # test mode
-            self.config_dir = self.local_dir = "/tmp"
+            self.config_dir = self.local_dir = test_dir if os.path.isdir(test_dir) else "/tmp"
             print("Test mode (working directory=%s)" % self.config_dir)
+            test_mode = True
 
         # config files
         self.cp = cp = ConfigParser.SafeConfigParser()
         self.cpfile = os.path.join(self.config_dir, "okboard.cf")
         _default_conf = os.path.join(os.path.dirname(__file__), "okboard.cf")
-        cp.read([ _default_conf, self.cpfile ])
+        _dist_conf = os.path.join(Okboard.SHARE_PATH, "okboard.cf")
+        cp.read([ _dist_conf, _default_conf, self.cpfile ])
 
         save = not os.path.isfile(self.cpfile)
         for s in [ "main", "default", "portrait", "landscape" ]:
@@ -86,6 +93,7 @@ class Okboard:
             with open(self.cpfile, 'w') as f: cp.write(f)
 
         self.cptime = os.path.getmtime(self.cpfile)
+        self.test_mode = test_mode
 
     def _get_config(self, only_if_modified = False):
         """ return some configuration elements for QML part """
@@ -109,8 +117,6 @@ class Okboard:
 
         result["curve_params"] = json.dumps(params)
 
-        # @TODO copier la base la première fois : .db & .tre
-
         if only_if_modified and result == self.last_conf: return dict(unchanged = True)
         self.last_conf = dict(result)
         return result
@@ -127,6 +133,11 @@ class Okboard:
 
         if cast: ret = cast(ret)
         return ret
+
+    def set_cf(self, key, value):
+        if key in self.cp["main"] and self.cp["main"][key] == str(value): return
+        self.cp["main"][key] = str(value)
+        with open(self.cpfile, 'w') as f: self.cp.write(f)
 
     def log(self, *args):
         message = ' '.join(map(str, args))
@@ -152,12 +163,43 @@ class Okboard:
         else:
             self.predict.set_dbfile(new_dbfile)
 
+        # copy distribution database to user home directory
+        if self.lang and len(self.lang) >= 2 and not self.test_mode:
+            for db in [ "predict-%s.db" % self.lang, "%s.tre" % self.lang ]:
+                src = os.path.join(Okboard.SHARE_PATH, db + ".gz")
+                dest = os.path.join(self.local_dir, db)
+                if os.path.exists(src) and not os.path.exists(dest):
+                    print("Deploying DB file %s -> %s" % (src, dest))
+                    with gzip.open(src, 'rb') as rf:
+                        with open(dest, 'wb') as wf:
+                            shutil.copyfileobj(rf, wf)
         self.predict.load_db()
 
-    def close():
+    def close(self):
         print("okboard.py exiting ...")
         self.predict.close()
 
+    def stg_set_log(self, value):
+        self.set_cf("log", "1" if value else "0")
+
+    def stg_set_rotate(self, value):
+        pass  # QQQ
+
+    def stg_purge_logs(self):
+        pass  # QQQ
+
+    def stg_reset_all_dbs(self):
+        pass  # QQQ
+
+    def stg_get_keyboards(self):
+        # pass  # QQQ
+        return [ "bla", "blu", "blo" ]
+
+    def stg_get_keyboard(self):
+        pass  # QQQ
+
+    def stg_set_keyboard(self, value):
+        pass  # QQQ
 
 k = Okboard()
 
