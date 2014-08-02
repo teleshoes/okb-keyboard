@@ -63,6 +63,7 @@ Canvas {
 
     CurveKB {
         id: curveimpl
+        onMatchingDone: { matching_done(candidates); }
     }
 
     Component.onCompleted: {
@@ -194,23 +195,24 @@ Canvas {
 
     function done(register) {
         if (register) {
-            curveimpl.endCurve(++ correlation_id);
-
-            // get candidate for curve matching
-            var candidates = curveimpl.getCandidates();
-
-            // improve the result with word prediction
-            py.call("okboard.k.guess", [ candidates, correlation_id ], function(result) {
-                if (result && result.length > 0) {
-                    commitWord(result, false);
-                }
-            })
-
-            // post processing / cleanup
-            // py.call("okboard.k.cleanup", [])
-
+            curveimpl.endCurveAsync(++ correlation_id); // we'll get a signal when curve matching
         }
         reset();
+    }
+
+    function matching_done(candidates) {
+        // callback on curve matching completed
+        console.log("matching done callback:", candidates); //QQQ
+
+        // improve the result with word prediction
+        py.call("okboard.k.guess", [ candidates, correlation_id ], function(result) {
+            if (result && result.length > 0) {
+                commitWord(result, false);
+            }
+        })
+        
+        // post processing / cleanup
+        // py.call("okboard.k.cleanup", [])
     }
 
     function get_config() {
@@ -259,17 +261,6 @@ Canvas {
         }
         if (layout != curve.layout) {
             _get_config = true;
-            /* QQQ
-            if (layout.substr(-4) == ".qml") {
-                layout = layout.substr(0, layout.length - 4);
-            }
-            var filename = local_dir + "/" + layout + ".tre";
-            console.log("Loading word tree: " + filename);
-            curve.ok = curveimpl.loadTree(filename);
-            curve.layout = layout;
-
-            keys_ok = false; // must reload keys position
-            */
         }
 
         // update prediction language & orientation
@@ -309,8 +300,10 @@ Canvas {
     }
 
     function commitWord(text, replace) {
-        // when replace is true, we replace the existing preedit (this is used when user click on the prediction bar to choose on alernate word)
+        // when replace is true, we replace the existing preedit (this is used when the user click on the prediction bar to choose on alernate word)
 
+        // @todo handle curve typing inside a word to replace it
+        
         // Commit existing Xt9* handle preedits
         if ((! replace) && keyboard.inputHandler.preedit.length > 0) {
             MInputMethodQuick.sendCommit(keyboard.inputHandler.preedit);

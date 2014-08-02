@@ -213,6 +213,9 @@ Item {
             curveStartX = curveLastX = touchPoints[0].x
             curveStartY = curveLastY = touchPoints[0].y
             
+            if (! curve.keys_ok) {
+                dumpKeys();
+            }
             curve.start(touchPoints[0])
             inCurve = true
             disablePopper = false
@@ -365,9 +368,6 @@ Item {
         }
         languageSwitchTimer.stop()
         if (inCurve) {
-            if (! curve.keys_ok) {
-                dumpKeys();
-            }
             curve.done(disablePopper)
         }
     }
