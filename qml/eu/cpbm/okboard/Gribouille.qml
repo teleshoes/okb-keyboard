@@ -61,6 +61,10 @@ Canvas {
     property bool keys_ok: false
     property bool started: false
 
+    property double start_time;
+    property double curve_length;
+    property double speed;
+
     CurveKB {
         id: curveimpl
         onMatchingDone: { matching_done(candidates); }
@@ -86,6 +90,12 @@ Canvas {
         onSurroundingTextChanged: {
             update_surrounding()
         }
+    }
+
+    Timer {
+        id: cleanupTimer
+        interval: 5000
+        onTriggered: { cleanup(); }
     }
 
     function update_surrounding() {
@@ -195,24 +205,32 @@ Canvas {
 
     function done(register) {
         if (register) {
+            var end_time = (new Date()).getTime() / 1000;
+            
+            speed = curve_length / (end_time - start_time)
             curveimpl.endCurveAsync(++ correlation_id); // we'll get a signal when curve matching
         }
         reset();
+        cleanupTimer.start();
     }
 
     function matching_done(candidates) {
         // callback on curve matching completed
-        console.log("matching done callback:", candidates); //QQQ
 
         // improve the result with word prediction
-        py.call("okboard.k.guess", [ candidates, correlation_id ], function(result) {
+        py.call("okboard.k.guess", [ candidates, correlation_id, speed ], function(result) {
             if (result && result.length > 0) {
                 commitWord(result, false);
             }
         })
-        
+
+    }
+
+    function cleanup() {
         // post processing / cleanup
-        // py.call("okboard.k.cleanup", [])
+        py.call("okboard.k.cleanup", [], function(result) {
+            if (result) { cleanupTimer.start(); }
+        })
     }
 
     function get_config() {
@@ -221,19 +239,26 @@ Canvas {
 
 
     function start(point) {
+        cleanupTimer.stop();
+
         lastPoints.push([point.x, point.y]);
         curveimpl.startCurve(point.x, point.y);
         started = true
 
+        start_time = (new Date()).getTime() / 1000;
+        curve_length = 0
+
         // update configuration if needed
-        var now = (new Date()).getTime() / 1000;
-        if (now > last_conf_update + 10) {
-            last_conf_update = now;
+        if (start_time > last_conf_update + 10) {
+            last_conf_update = start_time;
             get_config()
         }
     }
 
     function addPoint(point) {
+        var lastPoint = lastPoints[lastPoints.length - 1]
+        curve_length += Math.sqrt(Math.pow(lastPoint[0] - point.x, 2) + Math.pow(lastPoint[1] - point.y, 2))
+
         curveimpl.addPoint(point.x, point.y);
         lastPoints.push([point.x, point.y]);
 

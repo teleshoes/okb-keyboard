@@ -24,6 +24,7 @@ OKBOARD_TEST_DIR=/tmp  # let's use /tmp (beware of tmpfs ram usage)
 [ -f "$HOME/.okboard-test" ] && . $HOME/.okboard-test
 export QML2_IMPORT_PATH="$mydir/qml"
 export OKBOARD_TEST_DIR
+rm -f "$OKBOARD_TEST_DIR/okboard.cf" # always start with default params
 echo "Test directory: $OKBOARD_TEST_DIR"
 
 # link to okb-engine C++ plugin
