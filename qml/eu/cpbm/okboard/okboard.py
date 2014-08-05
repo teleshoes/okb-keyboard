@@ -27,14 +27,14 @@ class Okboard:
         self.orientation = None
         self.logf = None
 
-        # add error management wrappers
+        # add error management wrappers (this is probably no more necessary with pyotherside 1.2 error handler)
         self.guess = self.exception_wrapper(self.predict.guess)
         self.update_surrounding = self.exception_wrapper(self.predict.update_surrounding)
         self.get_predict_words = self.exception_wrapper(self.predict.get_predict_words)
         self.update_preedit = self.exception_wrapper(self.predict.update_preedit)
-        self.cleanup = self.exception_wrapper(self.predict.cleanup)
         self.replace_word = self.exception_wrapper(self.predict.replace_word)
 
+        self.cleanup = self.exception_wrapper(self._cleanup)
         self.set_context = self.exception_wrapper(self._set_context)
         self.get_config = self.exception_wrapper(self._get_config)
         self.init = self.exception_wrapper(self._init)
@@ -131,7 +131,13 @@ class Okboard:
             cp["main"][key] = str(default_value)
             with open(self.cpfile, 'w') as f: cp.write(f)
 
-        if cast: ret = cast(ret)
+        if cast:
+            try:
+                ret = cast(ret)
+            except:
+                cp["main"][key] = str(default_value)
+                with open(self.cpfile, 'w') as f: cp.write(f)
+                ret = default_value
         return ret
 
     def set_cf(self, key, value):
@@ -175,9 +181,24 @@ class Okboard:
                             shutil.copyfileobj(rf, wf)
         self.predict.load_db()
 
+    def _cleanup(self, **kwargs):
+        # log rotate
+        rotate = self.cf("log_rotate", True, mybool)
+        if rotate:
+            logs = [ "curve.log", "predict.log" ]
+            rotate_size = min(1, self.cf("rotate_mb", 10, int))
+            for log in logs:
+                fname = os.path.join(self.local_dir, log)
+                if os.path.getsize(fname) > rotate_size * 1000000:
+                    os.rename(fname, fname + ".bak")
+
+        return self.predict.cleanup(**kwargs)
+
     def close(self):
         print("okboard.py exiting ...")
         self.predict.close()
+
+    # --- functions for settings app ---
 
     def stg_set_log(self, value):
         self.set_cf("log", "1" if value else "0")
