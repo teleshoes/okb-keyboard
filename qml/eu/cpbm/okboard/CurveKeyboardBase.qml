@@ -205,7 +205,7 @@ Item {
 
         for (var i = 0; i < touchPoints.length; i++) {
             var point = ActivePoints.addPoint(touchPoints[i])
-            updatePressedKey(point)
+            updatePressedKey(point, true)
         }
 
         // curve typing
@@ -280,20 +280,20 @@ Item {
             if (popper.expanded && point.pressedKey === lastPressedKey) {
                 popper.setActiveCell(point.x, point.y)
             } else {
-                updatePressedKey(point)
+                updatePressedKey(point, false)
             }
         }
 
     }
 
-    function updatePressedKey(point) {
+    function updatePressedKey(point, play_sound) {
         var key = keyAt(point.x, point.y)
         if (point.pressedKey === key)
             return
 
         buttonPressEffect.play()
 
-        if (key) {
+        if (key && play_sound) {
             if (typeof key.keyType !== 'undefined' && key.keyType === KeyType.CharacterKey && key.text !== " ") {
                 SampleCache.play("/usr/share/sounds/jolla-ambient/stereo/keyboard_letter.wav")
             } else {
