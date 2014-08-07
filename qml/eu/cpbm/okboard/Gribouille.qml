@@ -325,10 +325,12 @@ Canvas {
     }
 
     function commitWord(text, replace) {
-        // when replace is true, we replace the existing preedit (this is used when the user click on the prediction bar to choose on alernate word)
+        // when replace is true, we replace the existing preedit (this is used when the user click on the prediction bar to choose an alternate word)
 
-        // @todo handle curve typing inside a word to replace it
-        
+        // word regexp
+        var word_regex = /[a-zA-Z\-\'\u0080-\u023F]+/; // \u0400-\u04FF for cyrillic, and so on ...
+            
+
         // Commit existing Xt9* handle preedits
         if ((! replace) && keyboard.inputHandler.preedit.length > 0) {
             MInputMethodQuick.sendCommit(keyboard.inputHandler.preedit);
@@ -336,15 +338,46 @@ Canvas {
             keyboard.autocaps = false;
         }
 
-        // Add a space if needed
+        var rpl_start = 0;
+        var rpl_len = 0;
+        var replaced_word = "";
+        var sentence_delimiter = ".?!";
+
+        // Processing based on surrounding text
         var forceAutocaps = false;
         if (MInputMethodQuick.surroundingTextValid) {
             var txt = MInputMethodQuick.surroundingText;
             var pos = MInputMethodQuick.cursorPosition;
-            if (pos > 0) {
+
+            // handle curve typing inside a word to replace it
+            if (pos < txt.length && word_regex.test(txt[pos]) && ! replace) {
+                if (pos > 0 && word_regex.test(txt[pos - 1])) {
+                    // if user click on a word and then swipe a word, the whole word is replaced
+                    var p1 = pos;
+                    while (p1 > 0 && word_regex.test(txt[p1 - 1])) { p1 --; }
+                    var p2 = pos;
+                    while (p2 < txt.length && word_regex.test(txt[p2])) { p2 ++; }
+                    rpl_start = p1 - pos;
+                    rpl_len = p2 - p1;
+                    replaced_word = txt.substr(p1, p2);
+
+                    // handle autocaps in replacements
+                    while (p1 > 0 && txt[p1 - 1] == ' ') { p1 --; }
+                    if ((p1 > 0 && (sentence.delimiter.indexOf(txt[p1 - 1]) >= 0)) || (p1 == 0)) {
+                        forceAutocaps = true;
+                    }
+                } else {
+                    // swiping from the start of a word will insert the new word just before
+                    // and added space will be added and committed right now (see below) 
+                    replace = true
+                    text = text + ' '
+                    // user will need to backspace to convert back the word as preedit
+                }
+
+            } else if (pos > 0) { // Add a space if needed
                 var lastc = txt.substr(pos - 1, 1)
                 if (lastc != ' ' && lastc != '-' && lastc != '\'') { MInputMethodQuick.sendCommit(' '); }
-                if (lastc == '.') { forceAutocaps = true; }
+                if (".?!".indexOf(lastc) >= 0) { forceAutocaps = true; }
             }
         }
 
@@ -358,11 +391,16 @@ Canvas {
             if (replace) {
                 var old = keyboard.inputHandler.preedit
                 MInputMethodQuick.sendCommit(text)
-                MInputMethodQuick.sendPreedit("", undefined);
+                MInputMethodQuick.sendPreedit("", undefined);                
                 keyboard.inputHandler.preedit = "";
                 py.call("okboard.k.replace_word", [ old, text ])
             } else {
-                MInputMethodQuick.sendPreedit(text, undefined);
+                if (rpl_len) {
+                    MInputMethodQuick.sendPreedit(text, undefined, rpl_start, rpl_len);                    
+                    py.call("okboard.k.replace_word", [ replaced_word, text ])
+                } else {
+                    MInputMethodQuick.sendPreedit(text, undefined);
+                }
                 keyboard.inputHandler.preedit = text;
             }
             
