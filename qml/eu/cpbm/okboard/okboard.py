@@ -88,7 +88,7 @@ class Okboard:
                 save = True
 
         if save:
-            cp["main"]["log"] = "1" if test_mode else "0"
+            cp["main"]["verbose"] = cp["main"]["log"] = "1" if test_mode else "0"
             cp["main"]["debug"] = "0"
             with open(self.cpfile, 'w') as f: cp.write(f)
 
@@ -145,7 +145,7 @@ class Okboard:
         self.cp["main"][key] = str(value)
         with open(self.cpfile, 'w') as f: self.cp.write(f)
 
-    def log(self, *args):
+    def log(self, *args, force_log = False):
         message = ' '.join(map(str, args))
         if not args:
             if self.logf:
@@ -154,10 +154,13 @@ class Okboard:
                 self.logf = None
             return
         print(message)
-        if self.cf('log', False, mybool):
+        if self.cf('log', False, mybool) or force_log:
             if not self.logf:
                 self.logf = open(os.path.join(self.local_dir, "predict.log"), "a")
             self.logf.write(message + "\n")
+            if force_log:
+                self.logf.close()
+                self.logf = None
 
     def _set_context(self, lang, orientation):
         """ sets language and try to load DB """
