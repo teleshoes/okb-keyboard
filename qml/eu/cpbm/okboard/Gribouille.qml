@@ -65,6 +65,8 @@ Canvas {
     property double curve_length;
     property double speed;
 
+    property string errormsg: ""
+
     CurveKB {
         id: curveimpl
         onMatchingDone: { matching_done(candidates); }
@@ -76,6 +78,7 @@ Canvas {
 
     Python {
         id: py
+        onError: { py.call("okboard.k.get_last_error", [], function(result) { show_error(result); }) }
     }
 
     Connections {
@@ -253,6 +256,8 @@ Canvas {
             last_conf_update = start_time;
             get_config()
         }
+        
+        errormsg = ""  // reset any previous error message
     }
 
     function addPoint(point) {
@@ -416,6 +421,15 @@ Canvas {
 
     function get_predict_words(callback) {
         py.call("okboard.k.get_predict_words", [], callback);
+    }
+
+    function show_error(traceback) {
+        /* some erreur happened in python or c++ libraries -> notify user */
+        if (traceback) {
+            errormsg = traceback;
+            curvepreedit = false;
+            curvepreedit = true;
+        }
     }
 
 }

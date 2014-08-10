@@ -45,6 +45,7 @@ Component {
                 id: curvePredictionModel
                 ListElement {
                     text: "?"
+                    error: false
                 }
             }
 
@@ -75,9 +76,11 @@ Component {
             
            
             delegate: BackgroundItem {
-                onClicked: { 
-                    console.log("Predition word selected:", text);
-                    keyboard.commitWord(text);
+                onClicked: {
+                    if (! error) {
+                        console.log("Predition word selected:", text);
+                        keyboard.commitWord(text);
+                    }
                 }
                 width: candidateText.width + Theme.paddingLarge
                 height: parent ? parent.height : 0
@@ -87,23 +90,31 @@ Component {
                     anchors.centerIn: parent
                     color: Theme.primaryColor // Theme.highlightColor
                     font { pixelSize: Theme.fontSizeSmall; family: Theme.fontFamily }
-                    text: formatText(model.text)
+                    text: formatText(model.text, model.error)
+                    font.bold: model.error
+                    font.underline: model.error
                     
-                    function formatText(text) {
+                    function formatText(text, error) {
                         return text;
                     }
                 }
             }
 
             function update_model() {
-                keyboard.get_predict_words(function(result) {
-                    curvePredictionModel.clear()
-                    if (result && result.length > 0) {
-                        curvePredictionModel.append(result)
-                    } else {
-                        curvePredictionModel.append({ 'text': '<I>No match found</I>' })
-                    }
-                });
+                if (keyboard.curveerror.length > 0) {
+                    curvePredictionModel.clear();
+                    var message = keyboard.curveerror.replace(/\n.*$/, '').substr(0, 100)
+                    curvePredictionModel.append({'text': message, 'error': true });
+                } else {                    
+                    keyboard.get_predict_words(function(result) {
+                        curvePredictionModel.clear();
+                        if (result && result.length > 0) {
+                            curvePredictionModel.append(result);
+                        } else {
+                            curvePredictionModel.append({ 'text': '<I>No match found</I>', 'error': false });
+                        }
+                    });
+                }
             }
 
         }

@@ -39,10 +39,17 @@ class Okboard:
         self.get_config = self.exception_wrapper(self._get_config)
         self.init = self.exception_wrapper(self._init)
 
+        self.last_error = None
+
         self.init()
         print("okboard.py init complete")
 
         print("predict.py exiting ...")
+
+    def get_last_error(self):
+        tmp = self.last_error
+        self.last_error = None
+        return tmp
 
     def exception_wrapper(self, func):
         # this is an ugly wrapper to display exceptions because they do not seem to be handled by pyotherside or lost somewhere in js/qml
@@ -52,10 +59,10 @@ class Okboard:
             except Exception as e:
                 for m in [ "Exception in function %s: %s" % (func.__qualname__, e),
                            traceback.format_exc() ]:
-                    print(m)
                     try: self.log(m)
                     except: pass
-                raise e
+                self.last_error = "Error in %s: %s (see logs)" % (func.__qualname__, str(e))  # exception for display in GUI
+                raise e;  # trigger QML error handler
         return wrapper
 
     def _init(self):

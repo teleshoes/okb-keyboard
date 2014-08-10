@@ -74,6 +74,7 @@ Item {
     property int curveStartY
     property bool disablePopper
     property bool curvepreedit: curve.curvepreedit  // just a proxy
+    property string curveerror: curve.errormsg // proxy
     property string preedit: inputHandler.preedit?inputHandler.preedit:""
 
     property QtObject emptyAttributes: Item {
