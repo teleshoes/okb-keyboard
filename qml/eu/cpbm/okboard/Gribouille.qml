@@ -303,7 +303,7 @@ Canvas {
 
         console.log("updateContext: layout =", layout, "orientation =", orientation, "mode =", mode, "get_config =", _get_config)
 
-        if (mode != "common") {
+        if (mode && mode != "common") { // sometimes mode is undefined
             // we don't handle "number" or "phone" keyboards
             curve.ok = false;
             return;
