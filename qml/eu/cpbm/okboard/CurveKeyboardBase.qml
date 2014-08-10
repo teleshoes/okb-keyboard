@@ -566,7 +566,7 @@ Item {
 
     // send information about layout to curve component
     function updateCurveContext() {
-        curve.updateContext(canvas.layoutModel.get(layoutRow.loader.index).layout);
+        curve.updateContext(canvas.layoutModel.get(layoutRow.loader.index).layout, mode);
     }
 
     // curvekb: dump text keys to c++ plugin

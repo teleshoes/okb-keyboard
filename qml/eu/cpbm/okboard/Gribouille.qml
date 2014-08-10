@@ -275,7 +275,7 @@ Canvas {
         }
     }
 
-    function updateContext(layout) {
+    function updateContext(layout, mode) {
         if (! local_dir) { init_python(); }
 
         var dir = Qt.resolvedUrl('.');
@@ -301,7 +301,13 @@ Canvas {
             keys_ok = false; // must reload keys position
         }
 
-        console.log("updateContext: layout =", layout, "orientation =", orientation, "get_config =", _get_config)
+        console.log("updateContext: layout =", layout, "orientation =", orientation, "mode =", mode, "get_config =", _get_config)
+
+        if (mode != "common") {
+            // we don't handle "number" or "phone" keyboards
+            curve.ok = false;
+            return;
+        }
 
         py.call("okboard.k.set_context", [ layout, orientation ]);  // this triggers predict db loading
         if (_get_config) {
