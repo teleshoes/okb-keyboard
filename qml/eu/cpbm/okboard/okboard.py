@@ -192,7 +192,8 @@ class Okboard:
             rotate_size = min(1, self.cf("rotate_mb", 10, int))
             for log in logs:
                 fname = os.path.join(self.local_dir, log)
-                if os.path.getsize(fname) > rotate_size * 1000000:
+                if os.path.exists(fname) and os.path.getsize(fname) > rotate_size * 1000000:
+                    if log == "predict.log": self.log()  # close log file
                     os.rename(fname, fname + ".bak")
 
         return self.predict.cleanup(**kwargs)
