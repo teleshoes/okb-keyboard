@@ -12,6 +12,7 @@ import configparser as ConfigParser
 import json
 import gzip
 import shutil
+import time
 
 from predict import Predict
 
@@ -40,6 +41,7 @@ class Okboard:
         self.init = self.exception_wrapper(self._init)
 
         self.last_error = None
+        self.last_get_config = time.time()
 
         self.init()
         print("okboard.py init complete")
@@ -126,6 +128,12 @@ class Okboard:
 
         if only_if_modified and result == self.last_conf: return dict(unchanged = True)
         self.last_conf = dict(result)
+
+        now = time.time()
+        if now > self.last_get_config + 120:
+            self.predict.refresh_db()
+        self.last_get_config = now
+
         return result
 
     def cf(self, key, default_value, cast = None):
