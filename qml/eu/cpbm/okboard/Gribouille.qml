@@ -309,6 +309,15 @@ Canvas {
             return;
         }
 
+        var now = (new Date()).getTime() / 1000;
+        if (now > start_time + 300) { 
+            // this will cause a DB refresh
+            console.log("Waking up after inactivity ...");
+            py.call("okboard.k.wake_up", [])
+            _get_config = true; 
+            start_time = now; 
+        }
+
         py.call("okboard.k.set_context", [ layout, orientation ]);  // this triggers predict db loading
         if (_get_config) {
             py.call("okboard.k.get_config", [ true ], function(result) { 

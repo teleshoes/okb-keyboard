@@ -34,6 +34,7 @@ class Okboard:
         self.get_predict_words = self.exception_wrapper(self.predict.get_predict_words)
         self.update_preedit = self.exception_wrapper(self.predict.update_preedit)
         self.replace_word = self.exception_wrapper(self.predict.replace_word)
+        self.wake_up = self.exception_wrapper(self.predict.refresh_db)
 
         self.cleanup = self.exception_wrapper(self._cleanup)
         self.set_context = self.exception_wrapper(self._set_context)
@@ -41,7 +42,6 @@ class Okboard:
         self.init = self.exception_wrapper(self._init)
 
         self.last_error = None
-        self.last_get_config = time.time()
 
         self.init()
         print("okboard.py init complete")
@@ -128,11 +128,6 @@ class Okboard:
 
         if only_if_modified and result == self.last_conf: return dict(unchanged = True)
         self.last_conf = dict(result)
-
-        now = time.time()
-        if now > self.last_get_config + 120:
-            self.predict.refresh_db()
-        self.last_get_config = now
 
         return result
 
