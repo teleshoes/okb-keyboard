@@ -212,6 +212,8 @@ Canvas {
             
             speed = curve_length / (end_time - start_time)
             curveimpl.endCurveAsync(++ correlation_id); // we'll get a signal when curve matching
+        } else {
+            curveimpl.resetCurve();
         }
         reset();
         cleanupTimer.start();
