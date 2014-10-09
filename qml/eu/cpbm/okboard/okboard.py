@@ -64,7 +64,7 @@ class Okboard:
                     try: self.log(m)
                     except: pass
                 self.last_error = "Error in %s: %s (see logs)" % (func.__qualname__, str(e))  # exception for display in GUI
-                raise e;  # trigger QML error handler
+                raise e  # trigger QML error handler
         return wrapper
 
     def _init(self):
@@ -125,6 +125,7 @@ class Okboard:
         for p in params: params[p] = float(params[p])
 
         result["curve_params"] = json.dumps(params)
+        result["disable"] = mybool(params.get("disable_orientation", False))
 
         if only_if_modified and result == self.last_conf: return dict(unchanged = True)
         self.last_conf = dict(result)

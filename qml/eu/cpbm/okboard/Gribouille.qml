@@ -6,7 +6,7 @@ Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
@@ -23,11 +23,11 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-/* 
+/*
   This file implement all "curve typing" stuff
 */
 
@@ -66,6 +66,8 @@ Canvas {
     property double speed;
 
     property string errormsg: ""
+
+    property bool orientation_disable: false
 
     CurveKB {
         id: curveimpl
@@ -123,9 +125,9 @@ Canvas {
 
         py.importModule_sync('okboard');
         console.log('imported python module');
-        
+
         // synchronous call because configuration is needed during initialization. Following calls will be asynchronous
-        var result = py.call_sync("okboard.k.get_config", []) 
+        var result = py.call_sync("okboard.k.get_config", [])
         apply_configuration(result)
         console.log('configuration OK');
 
@@ -134,7 +136,7 @@ Canvas {
 
     function apply_configuration(conf) {
         if (conf && conf["unchanged"]) {
-            // no configuration change 
+            // no configuration change
 
         } else if (conf) {
             console.log("configuration updated:")
@@ -150,7 +152,7 @@ Canvas {
             // path
             config_dir = conf['config_dir'];
             local_dir = conf['local_dir'];
-            
+
             // log
             var logfile = (conf['log'])?local_dir + "/curve.log":"";
             curveimpl.setLogFile(logfile);
@@ -162,6 +164,7 @@ Canvas {
             curveimpl.loadParameters(conf['curve_params']);
 
             conf_ok = true;
+            orientation_disable =  conf['disable']
 
         } else {
             // @todo display error message
@@ -170,7 +173,7 @@ Canvas {
             ok = false; // curve typing is disabled
         }
     }
-        
+
 
 
     function draw() {
@@ -186,7 +189,7 @@ Canvas {
             ctx.beginPath();
             ctx.strokeStyle = Theme.highlightColor;
             ctx.lineCap = "round";
-            ctx.lineWidth = 10;           
+            ctx.lineWidth = 10;
             ctx.moveTo(lastPoints[0][0], lastPoints[0][1]);
             for (var i = 1; i <= lastPoints.length - 1; i ++) {
                 ctx.lineTo(lastPoints[i][0], lastPoints[i][1]);
@@ -194,7 +197,7 @@ Canvas {
             ctx.stroke();
             ctx.closePath();
             lastPoints = [ lastPoints[lastPoints.length - 1] ]
-        }        
+        }
     }
 
     function reset() {
@@ -209,7 +212,7 @@ Canvas {
     function done(register) {
         if (register) {
             var end_time = (new Date()).getTime() / 1000;
-            
+
             speed = curve_length / (end_time - start_time)
             curveimpl.endCurveAsync(++ correlation_id); // we'll get a signal when curve matching
         } else {
@@ -258,7 +261,7 @@ Canvas {
             last_conf_update = start_time;
             get_config()
         }
-        
+
         errormsg = ""  // reset any previous error message
     }
 
@@ -312,24 +315,28 @@ Canvas {
         }
 
         var now = (new Date()).getTime() / 1000;
-        if (now > start_time + 300) { 
+        if (now > start_time + 300) {
             // this will cause a DB refresh
             console.log("Waking up after inactivity ...");
             py.call("okboard.k.wake_up", [])
-            _get_config = true; 
-            start_time = now; 
+            _get_config = true;
+            start_time = now;
         }
 
         py.call("okboard.k.set_context", [ layout, orientation ]);  // this triggers predict db loading
         if (_get_config) {
-            py.call("okboard.k.get_config", [ true ], function(result) { 
-                apply_configuration(result); 
-                if (layout != curve.layout) {
+            py.call("okboard.k.get_config", [ true ], function(result) {
+                apply_configuration(result);
+                if (orientation_disable) {
+                    curve.ok = false;
+                    curve.layout = "--";
+
+                } else if (layout != curve.layout) {
                     var filename = local_dir + "/" + layout + ".tre";
                     console.log("Loading word tree: " + filename);
                     curve.ok = curveimpl.loadTree(filename);
                     curve.layout = layout;
-                    
+
                     keys_ok = false; // must reload keys position
                 }
             })
@@ -351,7 +358,7 @@ Canvas {
 
         // word regexp
         var word_regex = /[a-zA-Z\-\'\u0080-\u023F]+/; // \u0400-\u04FF for cyrillic, and so on ...
-            
+
 
         // Commit existing Xt9* handle preedits
         if ((! replace) && keyboard.inputHandler.preedit.length > 0) {
@@ -390,7 +397,7 @@ Canvas {
                     }
                 } else {
                     // swiping from the start of a word will insert the new word just before
-                    // and added space will be added and committed right now (see below) 
+                    // and added space will be added and committed right now (see below)
                     replace = true
                     text = text + ' '
                     // user will need to backspace to convert back the word as preedit
@@ -413,25 +420,25 @@ Canvas {
             if (replace) {
                 var old = keyboard.inputHandler.preedit
                 MInputMethodQuick.sendCommit(text)
-                MInputMethodQuick.sendPreedit("", undefined);                
+                MInputMethodQuick.sendPreedit("", undefined);
                 keyboard.inputHandler.preedit = "";
                 py.call("okboard.k.replace_word", [ old, text ])
             } else {
                 if (rpl_len) {
-                    MInputMethodQuick.sendPreedit(text, undefined, rpl_start, rpl_len);                    
+                    MInputMethodQuick.sendPreedit(text, undefined, rpl_start, rpl_len);
                     py.call("okboard.k.replace_word", [ replaced_word, text ])
                 } else {
                     MInputMethodQuick.sendPreedit(text, undefined);
                 }
                 keyboard.inputHandler.preedit = text;
             }
-            
+
             curvepreedit = false // ugly hack :) (force a "onCompleted" on the word prediction list)
             curvepreedit = ! replace;
             expectedPos = MInputMethodQuick.cursorPosition;
         }
     }
-    
+
     function insertSpace() {
         commitWord("", false);
     }
