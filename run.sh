@@ -47,7 +47,7 @@ JS="/usr/share/maliit/plugins/com/jolla/$N"
 # check data directory
 if [ -d "$ENGINE/db" ] ; then
     find "$ENGINE/db/" -name '*.tre' | grep '^' >/dev/null || die "$ENGINE/db must contains some .tre & .db files"
-    rsync -rtOv "$ENGINE/db/" "$OKBOARD_TEST_DIR/" 
+    rsync -rtOuv "$ENGINE/db/" "$OKBOARD_TEST_DIR/"  # allow databases to be modified
 fi
 
 # restart maliit

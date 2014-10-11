@@ -13,6 +13,8 @@ import json
 import gzip
 import shutil
 import time
+import glob
+import subprocess
 
 from predict import Predict
 
@@ -20,6 +22,7 @@ mybool = lambda x: False if str(x).lower() in [ "0", "false", "no", "off", "" ] 
 
 class Okboard:
     SHARE_PATH = "/usr/share/okboard"
+    MALIIT_CONF_FILE = os.path.join(os.path.expanduser('~'), ".config/maliit.org/server.conf")
 
     def __init__(self):
         self.lang = None
@@ -154,7 +157,8 @@ class Okboard:
     def set_cf(self, key, value):
         if key in self.cp["main"] and self.cp["main"][key] == str(value): return
         self.cp["main"][key] = str(value)
-        with open(self.cpfile, 'w') as f: self.cp.write(f)
+        with open(self.cpfile + '.tmp', 'w') as f: self.cp.write(f)
+        os.rename(self.cpfile + '.tmp', self.cpfile)
 
     def log(self, *args, force_log = False):
         message = ' '.join(map(str, args))
@@ -215,27 +219,63 @@ class Okboard:
 
     # --- functions for settings app ---
 
+    def _restart_maliit_server(self):
+        # restart maliit server to apply changes 
+        # (use the right maliit plugin, and reload databases and configuration)
+        print("Restarting maliit server ...")
+        subprocess.call(["killall", "maliit-server"])  # ouch !
+
+    def stg_get_settings(self):
+        keyboard_enabled = False
+        if os.path.isfile(Okboard.MALIIT_CONF_FILE):
+            conf = open(Okboard.MALIIT_CONF_FILE, "r").read()
+            if conf.find("okboard") > -1: keyboard_enabled = True
+
+        result = dict(log = self.cf("log", 0, mybool),
+                      learn = self.cf("learning_enable", 0, mybool),
+                      enable = keyboard_enabled)
+
+        print("Settings:", result)
+        return result
+
+    def stg_enable(self, value):
+        dir = os.path.dirname(Okboard.MALIIT_CONF_FILE)
+        if not os.path.isdir(dir): os.mkdir(dir)
+        with open(Okboard.MALIIT_CONF_FILE, 'w') as f:
+            keyboard = "okboard" if value else "jolla-keyboard"
+            f.write("[maliit]\n")
+            f.write('onscreen\\active=%s.qml\n' % keyboard)
+            f.write('onscreen\\enabled=%s.qml\n' % keyboard)
+
+        self._restart_maliit_server()
+
     def stg_set_log(self, value):
+        print("Settings: set log", value)
         self.set_cf("log", "1" if value else "0")
 
-    def stg_set_rotate(self, value):
-        pass  # QQQ
+    def stg_set_learn(self, value):
+        print("Settings: set learning", value)
+        self.set_cf("learning_enable", value is True)
 
-    def stg_purge_logs(self):
-        pass  # QQQ
+    def stg_clear_logs(self):
+        logs = [ "curve.log", "predict.log" ]
+        for log in logs:
+            for log2 in [ log, log + '.bak' ]:
+                fname = os.path.join(self.local_dir, log2)
+                print("Removing %s (if present)" % fname)
+                if os.path.isfile(fname): os.unlink(fname)
+        self._restart_maliit_server()
 
-    def stg_reset_all_dbs(self):
-        pass  # QQQ
-
-    def stg_get_keyboards(self):
-        # pass  # QQQ
-        return [ "bla", "blu", "blo" ]
-
-    def stg_get_keyboard(self):
-        pass  # QQQ
-
-    def stg_set_keyboard(self, value):
-        pass  # QQQ
+    def stg_reset_all(self):
+        print("Reseting all databases & settings")
+        remove = (glob.glob(os.path.join(self.local_dir, "*.tre")) + 
+                  glob.glob(os.path.join(self.local_dir, "persist-*.db*")) + 
+                  glob.glob(os.path.join(self.config_dir, "okboard.cf")))
+        for fname in remove:
+            print("Removing %s" % fname)
+            os.unlink(fname)
+        # possible race condition here if keyboard decides to write its configuration again
+        self._restart_maliit_server()
 
 k = Okboard()
 

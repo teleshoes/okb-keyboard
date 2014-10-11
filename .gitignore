@@ -7,4 +7,5 @@ okboard-settings
 build
 okboard.cf
 .ropeproject
+Makefile
 
