@@ -34,6 +34,7 @@ make
 
 %install
 rm -rf %{buildroot}
+
 mkdir -p %{buildroot}/%{qml_maliit_dir} %{buildroot}/%{share_dir} %{buildroot}/%{plugin_dir} %{buildroot}/%{bin_dir}
 
 ln -sf /usr/share/maliit/plugins/com/jolla/touchpointarray.js %{buildroot}/%{qml_maliit_dir}/touchpointarray.js 
@@ -45,6 +46,14 @@ done
 cp plugin/okboard.qml %{buildroot}/%{plugin_dir}/
 
 cp build/okboard-settings %{buildroot}/%{bin_dir}/
+
+mkdir -p %{buildroot}%{_datadir}/applications %{buildroot}%{_datadir}/icons/86x86/apps
+cp okboard.desktop %{buildroot}%{_datadir}/applications
+cp okboard.png %{buildroot}%{_datadir}/icons/86x86/apps
+
+desktop-file-install --delete-original       \
+  --dir %{buildroot}%{_datadir}/applications             \
+   %{buildroot}%{_datadir}/applications/*.desktop
 
 %post
 killall maliit-server 2>&1 || true
@@ -64,4 +73,6 @@ killall maliit-server 2>&1 || true
 %{qml_maliit_dir}/okboard.py*
 %{plugin_dir}/okboard.qml
 %{bin_dir}/okboard-settings
+%{_datadir}/applications/%{name}.desktop
+%{_datadir}/icons/hicolor/86x86/apps/%{name}.png
 
