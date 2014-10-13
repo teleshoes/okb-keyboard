@@ -39,7 +39,7 @@ mkdir -p %{buildroot}/%{qml_maliit_dir} %{buildroot}/%{share_dir} %{buildroot}/%
 
 ln -sf /usr/share/maliit/plugins/com/jolla/touchpointarray.js %{buildroot}/%{qml_maliit_dir}/touchpointarray.js 
 
-for file in CurveKeyboardBase.qml okboard.py Gribouille.qml PredictList.qml qmldir ; do
+for file in CurveKeyboardBase.qml okboard.py Gribouille.qml PredictList.qml qmldir Settings.qml ; do
     cp -f qml/%{qml_subdir}/$file %{buildroot}/%{qml_maliit_dir}/
 done
 
@@ -47,9 +47,9 @@ cp plugin/okboard.qml %{buildroot}/%{plugin_dir}/
 
 cp build/okboard-settings %{buildroot}/%{bin_dir}/
 
-mkdir -p %{buildroot}%{_datadir}/applications %{buildroot}%{_datadir}/icons/86x86/apps
+mkdir -p %{buildroot}%{_datadir}/applications %{buildroot}%{_datadir}/icons/hicolor/86x86/apps
 cp okboard.desktop %{buildroot}%{_datadir}/applications
-cp okboard.png %{buildroot}%{_datadir}/icons/86x86/apps
+cp okboard.png %{buildroot}%{_datadir}/icons/hicolor/86x86/apps
 
 desktop-file-install --delete-original       \
   --dir %{buildroot}%{_datadir}/applications             \
@@ -71,6 +71,7 @@ killall maliit-server 2>&1 || true
 %{qml_maliit_dir}/touchpointarray.js
 %{qml_maliit_dir}/qmldir
 %{qml_maliit_dir}/okboard.py*
+%{qml_maliit_dir}/Settings.qml
 %{plugin_dir}/okboard.qml
 %{bin_dir}/okboard-settings
 %{_datadir}/applications/%{name}.desktop
