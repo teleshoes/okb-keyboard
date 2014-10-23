@@ -56,6 +56,7 @@ desktop-file-install --delete-original       \
    %{buildroot}%{_datadir}/applications/*.desktop
 
 %post
+rm -f /home/nemo/.config/maliit.org/server.conf
 killall maliit-server 2>&1 || true
 
 %postun
