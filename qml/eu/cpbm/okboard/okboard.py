@@ -45,6 +45,7 @@ class Okboard:
         self.init = self.exception_wrapper(self._init)
 
         self.last_error = None
+        self.cp = None
 
         self.init()
         print("okboard.py init complete")
@@ -160,14 +161,16 @@ class Okboard:
         with open(self.cpfile + '.tmp', 'w') as f: self.cp.write(f)
         os.rename(self.cpfile + '.tmp', self.cpfile)
 
-    def log(self, *args, force_log = False):
-        message = ' '.join(map(str, args))
+    def log(self, *args, **kwargs):
         if not args:
             if self.logf:
                 self.logf.write("\n")
                 self.logf.close()
                 self.logf = None
             return
+
+        force_log = kwargs.get("force_log", False)
+        message = ' '.join(map(str, args))
         print(message)
         if self.cf('log', False, mybool) or force_log:
             if not self.logf:
@@ -204,7 +207,7 @@ class Okboard:
         rotate = self.cf("log_rotate", True, mybool)
         if rotate:
             logs = [ "curve.log", "predict.log" ]
-            rotate_size = min(1, self.cf("rotate_mb", 10, int))
+            rotate_size = max(1, self.cf("rotate_mb", 5, int))
             for log in logs:
                 fname = os.path.join(self.local_dir, log)
                 if os.path.exists(fname) and os.path.getsize(fname) > rotate_size * 1000000:
@@ -220,7 +223,7 @@ class Okboard:
     # --- functions for settings app ---
 
     def _restart_maliit_server(self):
-        # restart maliit server to apply changes 
+        # restart maliit server to apply changes
         # (use the right maliit plugin, and reload databases and configuration)
         print("Restarting maliit server ...")
         subprocess.call(["killall", "maliit-server"])  # ouch !
@@ -268,8 +271,8 @@ class Okboard:
 
     def stg_reset_all(self):
         print("Reseting all databases & settings")
-        remove = (glob.glob(os.path.join(self.local_dir, "*.tre")) + 
-                  glob.glob(os.path.join(self.local_dir, "persist-*.db*")) + 
+        remove = (glob.glob(os.path.join(self.local_dir, "*.tre")) +
+                  glob.glob(os.path.join(self.local_dir, "persist-*.db*")) +
                   glob.glob(os.path.join(self.config_dir, "okboard.cf")))
         for fname in remove:
             print("Removing %s" % fname)
