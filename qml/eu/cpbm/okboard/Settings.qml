@@ -8,6 +8,7 @@ ApplicationWindow {
     property bool kb_enabled: false
     property bool pref_log: false
     property bool pref_learn: false
+    property string about: "?"
 
     Python {
         id: py
@@ -20,10 +21,15 @@ ApplicationWindow {
             console.log('imported python module');
 
             py.call("okboard.k.stg_get_settings", [ ], function(result) {
-                pref_log = result["log"]
-                pref_learn = result["learn"]
-                app.kb_enabled = result["enable"]
-                console.log("Settings OK")
+                pref_log = result["log"];
+                pref_learn = result["learn"];
+                app.kb_enabled = result["enable"];
+                console.log("Settings OK");
+            })
+
+            py.call("okboard.k.stg_about", [ ], function(result) {
+                console("plop about", result); //QQQ
+                app.about = result;
             })
         })
     }
@@ -31,7 +37,6 @@ ApplicationWindow {
     function set_kb_enable(value) {
         kb_enabled = value
         py.call("okboard.k.stg_enable", [ value ]);
-
     }
 
     cover: CoverBackground {
@@ -59,7 +64,7 @@ ApplicationWindow {
             CoverAction {
                 iconSource: "image://theme/icon-cover-next"
                 onTriggered: {
-                    set_kb_enable(! app.kb_enabled)
+                    set_kb_enable(! app.kb_enabled);
                 }
             }
         }
@@ -155,6 +160,14 @@ ApplicationWindow {
                         onPressed: {
                             remorse.execute("Reset DB & settings", function() { py.call("okboard.k.stg_reset_all", [ ]); } )
                         }
+                    }
+
+                    SectionHeader {
+                        text: "About"
+                    }
+
+                    Label {
+                        text: app.about
                     }
 
                 }

@@ -50,8 +50,6 @@ class Okboard:
         self.init()
         print("okboard.py init complete")
 
-        print("predict.py exiting ...")
-
     def get_last_error(self):
         tmp = self.last_error
         self.last_error = None
@@ -220,6 +218,13 @@ class Okboard:
         print("okboard.py exiting ...")
         self.predict.close()
 
+    def get_version(self):
+        try:
+            with file(os.path.join(os.path.basename(__file__), "okboard.version")) as f:
+                return f.read().strip()
+        except:
+            return "unknown"
+
     # --- functions for settings app ---
 
     def _restart_maliit_server(self):
@@ -234,8 +239,8 @@ class Okboard:
             conf = open(Okboard.MALIIT_CONF_FILE, "r").read()
             if conf.find("okboard") > -1: keyboard_enabled = True
 
-        result = dict(log = self.cf("log", 0, mybool),
-                      learn = self.cf("learning_enable", 0, mybool),
+        result = dict(log = self.cf("log", 1, mybool),
+                      learn = self.cf("learning_enable", 1, mybool),
                       enable = keyboard_enabled)
 
         print("Settings:", result)
@@ -279,6 +284,10 @@ class Okboard:
             os.unlink(fname)
         # possible race condition here if keyboard decides to write its configuration again
         self._restart_maliit_server()
+
+    def stg_about(self):
+        return "plop"
+        # return "Engine: %s\nKeyboard: %s" % (self.predict.get_version(), self.version)
 
 k = Okboard()
 
