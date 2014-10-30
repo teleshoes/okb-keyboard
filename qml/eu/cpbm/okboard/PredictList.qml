@@ -55,12 +55,13 @@ Component {
                     height: parent.height
                     width: headerLabel.width + 2 * Theme.paddingMedium
 
-                    Label {
+                    Image {                       
                         id: headerLabel
-                        font { pixelSize: Theme.fontSizeMedium; family: Theme.fontFamily }
-                        color:  Theme.highlightColor
                         anchors.centerIn: parent
-                        text: "\u270E" // it's a nice pen drawn by the unicode guy
+                        source: "pen.png"
+                        // unicode characters did not show on all devices, so we
+                        // replace it with an image (unfortunately, it does not
+                        // use theme colors)
                     }
                 }
             }
