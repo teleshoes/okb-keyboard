@@ -20,6 +20,17 @@ from predict import Predict
 
 mybool = lambda x: False if str(x).lower() in [ "0", "false", "no", "off", "" ] else True
 
+ABOUT = """
+OKBoard aka Magic Keyboard for Jolla
+http://projects.tuxfamily.org/?do=group;name=okboard
+Contact: eb@cpbm.eu
+License: BSD-like for Jolla Keyboard modifications, LGPL for engine
+
+No tester has been harmed in the making of this software
+
+=== Versions ===
+"""
+
 class Okboard:
     SHARE_PATH = "/usr/share/okboard"
     MALIIT_CONF_FILE = os.path.join(os.path.expanduser('~'), ".config/maliit.org/server.conf")
@@ -286,8 +297,7 @@ class Okboard:
         self._restart_maliit_server()
 
     def stg_about(self):
-        return "plop"
-        # return "Engine: %s\nKeyboard: %s" % (self.predict.get_version(), self.version)
+        return ABOUT.strip() + "\nEngine: %s\nKeyboard: %s" % (self.predict.get_version(), self.get_version())
 
 k = Okboard()
 

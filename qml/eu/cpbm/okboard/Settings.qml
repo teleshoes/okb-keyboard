@@ -25,12 +25,13 @@ ApplicationWindow {
                 pref_learn = result["learn"];
                 app.kb_enabled = result["enable"];
                 console.log("Settings OK");
+
+                py.call("okboard.k.stg_about", [ ], function(result) {
+                    app.about = result;
+                })
+                
             })
 
-            py.call("okboard.k.stg_about", [ ], function(result) {
-                console("plop about", result); //QQQ
-                app.about = result;
-            })
         })
     }
 
@@ -167,6 +168,9 @@ ApplicationWindow {
                     }
 
                     Label {
+                        color: Theme.secondaryColor
+                        font.family: Theme.fontFamily
+                        font.pixelSize: Theme.fontSizeTiny
                         text: app.about
                     }
 
