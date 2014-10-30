@@ -231,7 +231,7 @@ class Okboard:
 
     def get_version(self):
         try:
-            with file(os.path.join(os.path.basename(__file__), "okboard.version")) as f:
+            with open(os.path.join(os.path.dirname(__file__), "okboard.version"), "r") as f:
                 return f.read().strip()
         except:
             return "unknown"
