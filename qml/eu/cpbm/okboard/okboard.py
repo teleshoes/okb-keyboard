@@ -49,6 +49,7 @@ class Okboard:
         self.update_preedit = self.exception_wrapper(self.predict.update_preedit)
         self.replace_word = self.exception_wrapper(self.predict.replace_word)
         self.wake_up = self.exception_wrapper(self.predict.refresh_db)
+        self.log_qml = self.exception_wrapper(self._log_qml)
 
         self.cleanup = self.exception_wrapper(self._cleanup)
         self.set_context = self.exception_wrapper(self._set_context)
@@ -188,6 +189,10 @@ class Okboard:
             if force_log:
                 self.logf.close()
                 self.logf = None
+
+    def _log_qml(self, jsargs):
+        txt = ' '.join([ str(x[1]) for x in sorted(jsargs.items(), key = lambda x: int(x[0])) ])
+        self.log('QML: ' + txt)
 
     def _set_context(self, lang, orientation):
         """ sets language and try to load DB """

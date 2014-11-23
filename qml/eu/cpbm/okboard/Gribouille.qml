@@ -119,35 +119,39 @@ Canvas {
         }
     }
 
+    function log() {
+        py.call("okboard.k.log_qml", [ arguments ]);
+    }
+
     function init_python() {
         // init uses synchronous call, because we are called very early (loadKeys) and need the python parts initialized
         py.addImportPath(Qt.resolvedUrl('.'));
 
         py.importModule_sync('okboard');
-        console.log('imported python module');
+        log('imported python module');
 
         // synchronous call because configuration is needed during initialization. Following calls will be asynchronous
         var result = py.call_sync("okboard.k.get_config", [])
         apply_configuration(result)
-        console.log('configuration OK');
+        log('configuration OK');
 
         update_surrounding()
     }
-
+    
     function apply_configuration(conf) {
         if (conf && conf["unchanged"]) {
             // no configuration change
 
         } else if (conf) {
-            console.log("configuration updated:")
+            log("configuration updated:")
             var msg = "> ";
             for (var k in conf) {
                 if (conf.hasOwnProperty(k)) {
-                    if (msg.length + conf[k].length > 80) { console.log(msg); msg = "> "; }
+                    if (msg.length + conf[k].length > 80) { log(msg); msg = "> "; }
                     msg += " " + k + "=" + conf[k];
                 }
             }
-            console.log(msg);
+            log(msg);
 
             // path
             config_dir = conf['config_dir'];
@@ -168,7 +172,7 @@ Canvas {
 
         } else {
             // @todo display error message
-            console.log("Error loading configuration");
+            log("Error loading configuration");
             conf_ok = false;
             ok = false; // curve typing is disabled
         }
@@ -306,7 +310,7 @@ Canvas {
             keys_ok = false; // must reload keys position
         }
 
-        console.log("updateContext: layout =", layout, "orientation =", orientation, "mode =", mode, "get_config =", _get_config)
+        log("updateContext: layout =", layout, "orientation =", orientation, "mode =", mode, "get_config =", _get_config)
 
         if (mode && mode != "common") { // sometimes mode is undefined
             // we don't handle "number" or "phone" keyboards
@@ -317,7 +321,7 @@ Canvas {
         var now = (new Date()).getTime() / 1000;
         if (now > start_time + 300) {
             // this will cause a DB refresh
-            console.log("Waking up after inactivity ...");
+            log("Waking up after inactivity ...");
             py.call("okboard.k.wake_up", [])
             _get_config = true;
             start_time = now;
@@ -333,7 +337,7 @@ Canvas {
 
                 } else if (layout != curve.layout) {
                     var filename = local_dir + "/" + layout + ".tre";
-                    console.log("Loading word tree: " + filename);
+                    log("Loading word tree: " + filename);
                     curve.ok = curveimpl.loadTree(filename);
                     curve.layout = layout;
 
@@ -348,7 +352,7 @@ Canvas {
         if (! keys) { return; }
 
         curveimpl.loadKeys(keys)
-        console.log("Keys loaded - count:", keys.length)
+        log("Keys loaded - count:", keys.length)
 
         keys_ok = true
     }
@@ -359,9 +363,11 @@ Canvas {
         // word regexp
         var word_regex = /[a-zA-Z\-\'\u0080-\u023F]+/; // \u0400-\u04FF for cyrillic, and so on ...
 
+        // if preedit is not active, we must directly commit our changes (this happens in Jolla browser URL input field)
+        var preedit_ok = (typeof keyboard.inputHandler.preedit != 'undefined');
 
         // Commit existing Xt9* handle preedits
-        if ((! replace) && keyboard.inputHandler.preedit.length > 0) {
+        if ((! replace) && preedit_ok && keyboard.inputHandler.preedit.length > 0) {
             MInputMethodQuick.sendCommit(keyboard.inputHandler.preedit);
             keyboard.inputHandler.preedit = "";
             keyboard.autocaps = false;
@@ -392,7 +398,7 @@ Canvas {
 
                     // handle autocaps in replacements
                     while (p1 > 0 && txt[p1 - 1] == ' ') { p1 --; }
-                    if ((p1 > 0 && (sentence.delimiter.indexOf(txt[p1 - 1]) >= 0)) || (p1 == 0)) {
+                    if ((p1 > 0 && (sentence_delimiter.indexOf(txt[p1 - 1]) >= 0)) || (p1 == 0)) {
                         forceAutocaps = true;
                     }
                 } else {
@@ -420,15 +426,25 @@ Canvas {
             if (replace) {
                 var old = keyboard.inputHandler.preedit
                 MInputMethodQuick.sendCommit(text)
-                MInputMethodQuick.sendPreedit("", undefined);
-                keyboard.inputHandler.preedit = "";
+                if (preedit_ok) {
+                    MInputMethodQuick.sendPreedit("", undefined);  
+                    keyboard.inputHandler.preedit = "";
+                }
                 py.call("okboard.k.replace_word", [ old, text ])
             } else {
                 if (rpl_len) {
-                    MInputMethodQuick.sendPreedit(text, undefined, rpl_start, rpl_len);
-                    py.call("okboard.k.replace_word", [ replaced_word, text ])
+                    if (preedit_ok) {
+                        MInputMethodQuick.sendPreedit(text, undefined, rpl_start, rpl_len);
+                    } else {
+                        MInputMethodQuick.sendCommit(text, rpl_start, rpl_len);
+                    }
+                    py.call("okboard.k.replace_word", [ replaced_word, text ]);
                 } else {
-                    MInputMethodQuick.sendPreedit(text, undefined);
+                    if (preedit_ok) {
+                        MInputMethodQuick.sendPreedit(text, undefined);
+                    } else {
+                        MInputMethodQuick.sendCommit(text);
+                    }
                 }
                 keyboard.inputHandler.preedit = text;
             }
@@ -437,6 +453,7 @@ Canvas {
             curvepreedit = ! replace;
             expectedPos = MInputMethodQuick.cursorPosition;
         }
+
     }
 
     function insertSpace() {
