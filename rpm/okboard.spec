@@ -1,6 +1,6 @@
 Name:       okboard
 Summary:    OKboard (Jolla magic keyboard)
-Version:    0.1
+Version:    0.3
 Release:    1
 Group:      System/GUI/Other
 License:    BSD-like
@@ -31,6 +31,7 @@ OKboard maliit plugin and simple settings application
 %build
 qmake
 make
+echo "%{version}-%{release} build: "`date` > okboard.version
 
 %install
 rm -rf %{buildroot}
@@ -39,7 +40,7 @@ mkdir -p %{buildroot}/%{qml_maliit_dir} %{buildroot}/%{share_dir} %{buildroot}/%
 
 ln -sf /usr/share/maliit/plugins/com/jolla/touchpointarray.js %{buildroot}/%{qml_maliit_dir}/touchpointarray.js 
 
-for file in CurveKeyboardBase.qml okboard.py Gribouille.qml PredictList.qml qmldir Settings.qml ; do
+for file in CurveKeyboardBase.qml okboard.py Gribouille.qml PredictList.qml qmldir Settings.qml pen.png ; do
     cp -f qml/%{qml_subdir}/$file %{buildroot}/%{qml_maliit_dir}/
 done
 
@@ -50,6 +51,8 @@ cp build/okboard-settings %{buildroot}/%{bin_dir}/
 mkdir -p %{buildroot}%{_datadir}/applications %{buildroot}%{_datadir}/icons/hicolor/86x86/apps
 cp okboard.desktop %{buildroot}%{_datadir}/applications
 cp okboard.png %{buildroot}%{_datadir}/icons/hicolor/86x86/apps
+
+cp okboard.version %{buildroot}/%{qml_maliit_dir}
 
 desktop-file-install --delete-original       \
   --dir %{buildroot}%{_datadir}/applications             \
@@ -65,7 +68,7 @@ killall maliit-server 2>&1 || true
 
 %files
 %defattr(-,root,root,-)
-%doc README LICENSE
+%doc README.md LICENSE
 %{qml_maliit_dir}/CurveKeyboardBase.qml
 %{qml_maliit_dir}/Gribouille.qml
 %{qml_maliit_dir}/PredictList.qml
@@ -73,6 +76,8 @@ killall maliit-server 2>&1 || true
 %{qml_maliit_dir}/qmldir
 %{qml_maliit_dir}/okboard.py*
 %{qml_maliit_dir}/Settings.qml
+%{qml_maliit_dir}/okboard.version
+%{qml_maliit_dir}/pen.png
 %{plugin_dir}/okboard.qml
 %{bin_dir}/okboard-settings
 %{_datadir}/applications/%{name}.desktop
