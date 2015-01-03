@@ -293,7 +293,7 @@ class Okboard:
     def stg_reset_all(self):
         print("Reseting all databases & settings")
         remove = (glob.glob(os.path.join(self.local_dir, "*.tre")) +
-                  glob.glob(os.path.join(self.local_dir, "persist-*.db*")) +
+                  glob.glob(os.path.join(self.local_dir, "predict-*.db")) +
                   glob.glob(os.path.join(self.config_dir, "okboard.cf")))
         for fname in remove:
             print("Removing %s" % fname)
