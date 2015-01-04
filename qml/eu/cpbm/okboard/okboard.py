@@ -98,12 +98,24 @@ class Okboard:
             test_mode = True
 
         # config files
-        self.cp = cp = ConfigParser.SafeConfigParser()
         self.cpfile = os.path.join(self.config_dir, "okboard.cf")
         _default_conf = os.path.join(os.path.dirname(__file__), "okboard.cf")
         _dist_conf = os.path.join(Okboard.SHARE_PATH, "okboard.cf")
+        self.cp = cp = ConfigParser.SafeConfigParser()
         cp.read([ _dist_conf, _default_conf, self.cpfile ])
 
+        # check version
+        db_version = int(cp["main"].get("db_version", 0)) if "main" in cp else None;
+        expected_db_version = self.get_expected_db_version()
+        if expected_db_version and db_version != expected_db_version:
+            print("Configuration file mismatch: %d != %d" % (db_version, expected_db_version))
+            # we were using a version with an older data scheme
+            # (DB or configuration -> no distinction for now, we reset everything)
+            self.reset_all()
+            self.cp = cp = ConfigParser.SafeConfigParser()
+            cp.read([ _dist_conf, _default_conf ])
+
+        # save if needed
         save = not os.path.isfile(self.cpfile)
         for s in [ "main", "default", "portrait", "landscape" ]:
             if s not in cp:
@@ -111,6 +123,7 @@ class Okboard:
                 save = True
 
         if save:
+            cp["main"]["db_version"] = str(expected_db_version)
             cp["main"]["verbose"] = cp["main"]["log"] = "1" if test_mode else "0"
             cp["main"]["debug"] = "0"
             with open(self.cpfile, 'w') as f: cp.write(f)
@@ -234,12 +247,28 @@ class Okboard:
         print("okboard.py exiting ...")
         self.predict.close()
 
+    def get_expected_db_version(self):
+        try:
+            with open(os.path.join(os.path.dirname(__file__), "db.version"), "r") as f:
+                return int(f.read().strip())
+        except: return None
+        
     def get_version(self):
         try:
             with open(os.path.join(os.path.dirname(__file__), "okboard.version"), "r") as f:
                 return f.read().strip()
         except:
             return "unknown"
+
+    def reset_all(self):
+        print("Reseting all databases & settings")
+        remove = (glob.glob(os.path.join(self.local_dir, "*.tre")) +
+                  glob.glob(os.path.join(self.local_dir, "predict-*.db")) +
+                  glob.glob(os.path.join(self.config_dir, "okboard.cf")))
+        for fname in remove:
+            print("Removing %s" % fname)
+            os.unlink(fname)
+
 
     # --- functions for settings app ---
 
@@ -291,18 +320,13 @@ class Okboard:
         self._restart_maliit_server()
 
     def stg_reset_all(self):
-        print("Reseting all databases & settings")
-        remove = (glob.glob(os.path.join(self.local_dir, "*.tre")) +
-                  glob.glob(os.path.join(self.local_dir, "predict-*.db")) +
-                  glob.glob(os.path.join(self.config_dir, "okboard.cf")))
-        for fname in remove:
-            print("Removing %s" % fname)
-            os.unlink(fname)
+        self.reset_all()
+
         # possible race condition here if keyboard decides to write its configuration again
         self._restart_maliit_server()
 
     def stg_about(self):
-        return ABOUT.strip() + "\nEngine: %s\nKeyboard: %s" % (self.predict.get_version(), self.get_version())
+        return ABOUT.strip() + "\nEngine: %s\nKeyboard: %s\nDB format: %d" % (self.predict.get_version(), self.get_version(), self.get_expected_db_version())
 
 k = Okboard()
 

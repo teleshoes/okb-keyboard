@@ -8,4 +8,4 @@ build
 okboard.cf
 .ropeproject
 Makefile
-
+db.version

@@ -1,6 +1,6 @@
 Name:       okboard
 Summary:    OKboard (Jolla magic keyboard)
-Version:    0.3.2
+Version:    0.3.3
 Release:    1
 Group:      System/GUI/Other
 License:    BSD-like
@@ -33,6 +33,8 @@ qmake
 make
 echo "%{version}-%{release} build: "`date` > okboard.version
 
+cat version.cf | grep '^DB_VERSION' | cut -d'=' -f 2 | tr -cd '0-9' > db.version
+
 %install
 rm -rf %{buildroot}
 
@@ -53,6 +55,7 @@ cp okboard.desktop %{buildroot}%{_datadir}/applications
 cp okboard.png %{buildroot}%{_datadir}/icons/hicolor/86x86/apps
 
 cp okboard.version %{buildroot}/%{qml_maliit_dir}
+cp db.version %{buildroot}/%{qml_maliit_dir}
 
 desktop-file-install --delete-original       \
   --dir %{buildroot}%{_datadir}/applications             \
@@ -77,6 +80,7 @@ killall maliit-server 2>&1 || true
 %{qml_maliit_dir}/okboard.py*
 %{qml_maliit_dir}/Settings.qml
 %{qml_maliit_dir}/okboard.version
+%{qml_maliit_dir}/db.version
 %{qml_maliit_dir}/pen.png
 %{plugin_dir}/okboard.qml
 %{bin_dir}/okboard-settings
