@@ -69,6 +69,9 @@ Canvas {
 
     property bool orientation_disable: false
 
+    property double timer_last;
+    property string timer_str;
+
     CurveKB {
         id: curveimpl
         onMatchingDone: { matching_done(candidates); }
@@ -117,6 +120,16 @@ Canvas {
         onPreeditChanged: {
             py.call("okboard.k.update_preedit", [ keyboard.preedit ])
         }
+    }
+
+    function perf_timer(name) {
+        var now = (new Date()).getTime()
+        if (name) {
+            timer_str += " " + name + "=" + (now - timer_last)
+        } else {
+            timer_str = "Perf>"
+        }
+        timer_last = now
     }
 
     function log() {
@@ -214,6 +227,7 @@ Canvas {
     }
 
     function done(register) {
+        perf_timer("draw")
         if (register) {
             var end_time = (new Date()).getTime() / 1000;
 
@@ -224,13 +238,16 @@ Canvas {
         }
         reset();
         cleanupTimer.start();
+        perf_timer("reset")
     }
 
     function matching_done(candidates) {
         // callback on curve matching completed
+        perf_timer("curve_match")
 
         // improve the result with word prediction
         py.call("okboard.k.guess", [ candidates, correlation_id, speed ], function(result) {
+            perf_timer("predict")
             if (result && result.length > 0) {
                 commitWord(result, false);
             }
@@ -251,6 +268,8 @@ Canvas {
 
 
     function start(point) {
+        perf_timer(undefined)
+
         cleanupTimer.stop();
 
         lastPoints.push([point.x, point.y]);
@@ -454,6 +473,8 @@ Canvas {
             expectedPos = MInputMethodQuick.cursorPosition;
         }
 
+        perf_timer("commit_done")
+        log(timer_str)
     }
 
     function insertSpace() {
