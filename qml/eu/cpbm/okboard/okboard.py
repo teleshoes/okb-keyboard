@@ -264,6 +264,7 @@ class Okboard:
         print("Reseting all databases & settings")
         remove = (glob.glob(os.path.join(self.local_dir, "*.tre")) +
                   glob.glob(os.path.join(self.local_dir, "predict-*.db")) +
+                  glob.glob(os.path.join(self.local_dir, "predict-*.ng")) +
                   glob.glob(os.path.join(self.config_dir, "okboard.cf")))
         for fname in remove:
             print("Removing %s" % fname)
