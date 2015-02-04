@@ -219,7 +219,7 @@ class Okboard:
 
         # copy distribution database to user home directory
         if self.lang and len(self.lang) >= 2 and not self.test_mode:
-            for db in [ "predict-%s.db" % self.lang, "%s.tre" % self.lang ]:
+            for db in [ "predict-%s.db" % self.lang, "%s.tre" % self.lang, "predict-%s.ng" % self.lang ]:
                 src = os.path.join(Okboard.SHARE_PATH, db + ".gz")
                 dest = os.path.join(self.local_dir, db)
                 if os.path.exists(src) and not os.path.exists(dest):

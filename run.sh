@@ -27,6 +27,10 @@ export OKBOARD_TEST_DIR
 rm -f "$OKBOARD_TEST_DIR/okboard.cf" # always start with default params
 echo "Test directory: $OKBOARD_TEST_DIR"
 
+ngram_lib=`find "$ENGINE/ngrams/build/" -type d -name "lib.*"`
+[ -d "$ngram_lib" ] || die "Error finding ngram library: $ngram_lib"
+export PYTHONPATH="$PYTHONPATH:$ngram_lib"
+
 # link to okb-engine C++ plugin
 qmldir="$mydir/qml/eu/cpbm/okboard"
 SO="$ENGINE/curve/build/libcurveplugin.so"
@@ -47,7 +51,7 @@ JS="/usr/share/maliit/plugins/com/jolla/$N"
 # check data directory
 if [ -d "$ENGINE/db" ] ; then
     find "$ENGINE/db/" -name '*.tre' | grep '^' >/dev/null || die "$ENGINE/db must contains some .tre & .db files"
-    rsync -rtOuv "$ENGINE/db/" "$OKBOARD_TEST_DIR/"  # allow databases to be modified
+    cp -avfu $ENGINE/db/??.tre $ENGINE/db/predict-??.db $ENGINE/db/predict-??.ng "$OKBOARD_TEST_DIR/"  # allow databases to be modified
 fi
 
 # restart maliit
