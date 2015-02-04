@@ -36,7 +36,7 @@ for t in ??.tre ; do
     if [ -n "$upd" ] ; then
 	../tools/dbreset.sh "predict-$lang.db"
 	sleep 1
-	tar cvfj "$RPMBUILD/SOURCES/okb-lang-$lang.tar.bz2" "$lang.tre" "predict-$lang.db"
+	tar cvfj "$RPMBUILD/SOURCES/okb-lang-$lang.tar.bz2" "$lang.tre" "predict-$lang.db" "predict-$lang.ng"
     fi
 done
 popd
