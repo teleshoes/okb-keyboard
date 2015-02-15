@@ -27,7 +27,8 @@ export OKBOARD_TEST_DIR
 rm -f "$OKBOARD_TEST_DIR/okboard.cf" # always start with default params
 echo "Test directory: $OKBOARD_TEST_DIR"
 
-ngram_lib=`find "$ENGINE/ngrams/build/" -type d -name "lib.*"`
+machine=`uname -m`
+ngram_lib=`find "$ENGINE/ngrams/build/" -type d -name "lib.*" | grep "$machine"`
 [ -d "$ngram_lib" ] || die "Error finding ngram library: $ngram_lib"
 export PYTHONPATH="$PYTHONPATH:$ngram_lib"
 

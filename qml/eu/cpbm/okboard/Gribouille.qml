@@ -102,7 +102,7 @@ Canvas {
 
     Timer {
         id: cleanupTimer
-        interval: 5000
+        interval: 30000
         onTriggered: { cleanup(); }
     }
 
