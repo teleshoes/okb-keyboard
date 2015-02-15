@@ -108,7 +108,7 @@ class Okboard:
         db_version = int(cp["main"].get("db_version", 0)) if "main" in cp else None;
         expected_db_version = self.get_expected_db_version()
         if expected_db_version and db_version != expected_db_version:
-            print("Configuration file mismatch: %d != %d" % (db_version, expected_db_version))
+            print("Configuration file mismatch: %s != %s" % (db_version, expected_db_version))
             # we were using a version with an older data scheme
             # (DB or configuration -> no distinction for now, we reset everything)
             self.reset_all()
