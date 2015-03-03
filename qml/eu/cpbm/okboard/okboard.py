@@ -274,6 +274,7 @@ class Okboard:
                     with open(dest, 'wb') as wf:
                         shutil.copyfileobj(rf, wf)
                         ok = True
+        return ok
 
 
     def _cleanup(self, **kwargs):
