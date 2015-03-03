@@ -12,7 +12,6 @@ import configparser as ConfigParser
 import json
 import gzip
 import shutil
-import time
 import glob
 import subprocess
 
@@ -60,7 +59,7 @@ class Okboard:
         self.cp = None
 
         self.init()
-        print("okboard.py init complete")
+        self.log("okboard.py init complete")
 
     def get_last_error(self):
         tmp = self.last_error
@@ -105,25 +104,29 @@ class Okboard:
         cp.read([ _dist_conf, _default_conf, self.cpfile ])
 
         # check version
-        db_version = int(cp["main"].get("db_version", 0)) if "main" in cp else None;
-        expected_db_version = self.get_expected_db_version()
+        save = False
+        db_version = 0
+        try:
+            db_version = int(cp["main"].get("db_version", 0)) if "main" in cp else 0
+        except: pass
+
+        self.expected_db_version = expected_db_version = self.get_expected_db_version()
         if expected_db_version and db_version != expected_db_version:
             print("Configuration file mismatch: %s != %s" % (db_version, expected_db_version))
-            # we were using a version with an older data scheme
-            # (DB or configuration -> no distinction for now, we reset everything)
-            self.reset_all()
+            # we were using a version with an older data scheme --> reset configuration
             self.cp = cp = ConfigParser.SafeConfigParser()
             cp.read([ _dist_conf, _default_conf ])
+            save = True
 
         # save if needed
-        save = not os.path.isfile(self.cpfile)
+        if not os.path.isfile(self.cpfile): save = True
         for s in [ "main", "default", "portrait", "landscape" ]:
-            if s not in cp:
+            if s not in cp: # add sections
                 cp[s] = {}
                 save = True
 
         if save:
-            cp["main"]["db_version"] = str(expected_db_version)
+            if expected_db_version: cp["main"]["db_version"] = str(expected_db_version)
             cp["main"]["verbose"] = cp["main"]["log"] = "1" if test_mode else "0"
             cp["main"]["debug"] = "0"
             with open(self.cpfile, 'w') as f: cp.write(f)
@@ -217,17 +220,60 @@ class Okboard:
         else:
             self.predict.set_dbfile(new_dbfile)
 
-        # copy distribution database to user home directory
-        if self.lang and len(self.lang) >= 2 and not self.test_mode:
-            for db in [ "predict-%s.db" % self.lang, "%s.tre" % self.lang, "predict-%s.ng" % self.lang ]:
-                src = os.path.join(Okboard.SHARE_PATH, db + ".gz")
-                dest = os.path.join(self.local_dir, db)
-                if os.path.exists(src) and not os.path.exists(dest):
-                    print("Deploying DB file %s -> %s" % (src, dest))
-                    with gzip.open(src, 'rb') as rf:
-                        with open(dest, 'wb') as wf:
-                            shutil.copyfileobj(rf, wf)
-        self.predict.load_db()
+        if not self.lang or len(self.lang) != 2: return
+
+        # if self.test_mode:
+        #     self.predict.load_db()  # no error or version management in test mode
+        #     return
+
+        # try to load DB and copy distribution database to user home directory if needed
+        message = ""
+        init = False
+        st = None
+        try:
+            st = self.predict.load_db()
+        except Exception as e:
+            message = "Corrupted DB: " + str(e)
+            init = True
+
+        if not init:
+            if not st:
+                init = True  # DB not installed
+            else:
+                db_version = int(self.predict.db.get_param("version", 0))
+                if self.expected_db_version and db_version != self.expected_db_version:
+                    message = "Outdated database (%s/%s) -> Resetting all data" % (db_version, self.expected_db_version)
+                    init = True
+
+        if init:
+            self._reset_db(lang)
+            if self._install_dist_db(lang, force = True):
+                self.load_db()
+
+        if message: raise Exception(message)  # display as error message
+
+    def _reset_db(self, lang):
+        self.log("Reseting databases for language %s" % lang)
+        remove = [ os.path.join(self.local_dir, "%s.tre" % lang),
+                   os.path.join(self.local_dir, "predict-%s.db" % lang),
+                   os.path.join(self.local_dir, "predict-%s.ng" % lang) ]
+        for fname in remove:
+            if os.path.isfile(fname):
+                self.log("Removing %s" % fname)
+                os.unlink(fname)
+
+    def _install_dist_db(self, lang, force = False):
+        ok = False
+        for db in [ "predict-%s.db" % lang, "%s.tre" % lang, "predict-%s.ng" % lang ]:
+            src = os.path.join(Okboard.SHARE_PATH, db + ".gz")
+            dest = os.path.join(self.local_dir, db)
+            if os.path.exists(src) and (force or not os.path.exists(dest)):
+                self.log("Deploying DB file %s -> %s" % (src, dest))
+                with gzip.open(src, 'rb') as rf:
+                    with open(dest, 'wb') as wf:
+                        shutil.copyfileobj(rf, wf)
+                        ok = True
+
 
     def _cleanup(self, **kwargs):
         # log rotate
@@ -244,7 +290,7 @@ class Okboard:
         return self.predict.cleanup(**kwargs)
 
     def close(self):
-        print("okboard.py exiting ...")
+        self.log("okboard.py exiting ...")
         self.predict.close()
 
     def get_expected_db_version(self):
@@ -252,7 +298,7 @@ class Okboard:
             with open(os.path.join(os.path.dirname(__file__), "db.version"), "r") as f:
                 return int(f.read().strip())
         except: return None
-        
+
     def get_version(self):
         try:
             with open(os.path.join(os.path.dirname(__file__), "okboard.version"), "r") as f:
@@ -261,22 +307,21 @@ class Okboard:
             return "unknown"
 
     def reset_all(self):
-        print("Reseting all databases & settings")
+        self.log("Reseting all databases & settings")
         remove = (glob.glob(os.path.join(self.local_dir, "*.tre")) +
                   glob.glob(os.path.join(self.local_dir, "predict-*.db")) +
                   glob.glob(os.path.join(self.local_dir, "predict-*.ng")) +
                   glob.glob(os.path.join(self.config_dir, "okboard.cf")))
         for fname in remove:
-            print("Removing %s" % fname)
+            self.log("Removing %s" % fname)
             os.unlink(fname)
-
 
     # --- functions for settings app ---
 
     def _restart_maliit_server(self):
         # restart maliit server to apply changes
         # (use the right maliit plugin, and reload databases and configuration)
-        print("Restarting maliit server ...")
+        self.log("Restarting maliit server ...")
         subprocess.call(["killall", "maliit-server"])  # ouch !
 
     def stg_get_settings(self):
@@ -289,7 +334,7 @@ class Okboard:
                       learn = self.cf("learning_enable", 1, mybool),
                       enable = keyboard_enabled)
 
-        print("Settings:", result)
+        self.log("Settings:", result)
         return result
 
     def stg_enable(self, value):
@@ -304,11 +349,11 @@ class Okboard:
         self._restart_maliit_server()
 
     def stg_set_log(self, value):
-        print("Settings: set log", value)
+        self.log("Settings: set log", value)
         self.set_cf("log", "1" if value else "0")
 
     def stg_set_learn(self, value):
-        print("Settings: set learning", value)
+        self.log("Settings: set learning", value)
         self.set_cf("learning_enable", value is True)
 
     def stg_clear_logs(self):
@@ -316,7 +361,7 @@ class Okboard:
         for log in logs:
             for log2 in [ log, log + '.bak' ]:
                 fname = os.path.join(self.local_dir, log2)
-                print("Removing %s (if present)" % fname)
+                self.log("Removing %s (if present)" % fname)
                 if os.path.isfile(fname): os.unlink(fname)
         self._restart_maliit_server()
 

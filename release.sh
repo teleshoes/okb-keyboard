@@ -31,6 +31,7 @@ for t in ??.tre ; do
     upd=
     version=`../tools/db_param.py "predict-$lang.db" version | awk '{ print $3 }'`
     if [ "$version" != "$DB_VERSION" ] ; then
+	echo $DB_VERSION > db.version
 	echo "Updating DB version: $version -> $DB_VERSION"
 	../tools/db_param.py "predict-$lang.db" version $DB_VERSION
 	upd=1
