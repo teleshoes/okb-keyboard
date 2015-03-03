@@ -246,9 +246,10 @@ class Okboard:
                     init = True
 
         if init:
+            self.predict.close()
             self._reset_db(lang)
             if self._install_dist_db(lang, force = True):
-                self.load_db(force_reload = True)
+                self.predict.load_db(force_reload = True)
 
         if message: raise Exception(message)  # display as error message
 
