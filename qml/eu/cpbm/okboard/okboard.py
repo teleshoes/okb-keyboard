@@ -229,21 +229,18 @@ class Okboard:
         # try to load DB and copy distribution database to user home directory if needed
         message = ""
         init = False
-        st = None
         try:
-            st = self.predict.load_db()
+            if not self.predict.load_db(): init = True
+
         except Exception as e:
             message = "Corrupted DB: " + str(e)
             init = True
 
         if not init:
-            if not st:
-                init = True  # DB not installed
-            else:
-                db_version = int(self.predict.db.get_param("version", 0))
-                if self.expected_db_version and db_version != self.expected_db_version:
-                    message = "Outdated database (%s/%s) -> Resetting all data" % (db_version, self.expected_db_version)
-                    init = True
+            db_version = int(self.predict.db.get_param("version", 0))
+            if self.expected_db_version and db_version != self.expected_db_version:
+                message = "Outdated database (%s/%s) -> Resetting all data" % (db_version, self.expected_db_version)
+                init = True
 
         if init:
             self.predict.close()
@@ -274,6 +271,7 @@ class Okboard:
                     with open(dest, 'wb') as wf:
                         shutil.copyfileobj(rf, wf)
                         ok = True
+
         return ok
 
 
