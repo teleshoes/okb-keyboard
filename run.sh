@@ -14,6 +14,19 @@ ENGINE=`realpath "$ENGINE"`
 
 [ -d "$ENGINE" ] || die "okb-engine must be unpacked in the same directory as okb-keyboard"
 
+no_detach=
+dont_reset_conf=
+while [ -n "$1" ] ; do
+    case "$1" in
+	-n) no_detach=1 ;;
+	-c) dont_reset_conf=1 ;;
+	*) die "usage: "`basename "$0"`" [-n] [-c]" ;;
+    esac
+    shift
+done
+
+
+
 # set up maliit configuration file
 conffile="$HOME/.config/maliit.org/server.conf"
 cat "$mydir/server.conf" | sed 's+^paths=.*+paths='"$mydir/plugin"'+' | tee "$conffile"
@@ -24,7 +37,7 @@ OKBOARD_TEST_DIR=/tmp  # let's use /tmp (beware of tmpfs ram usage)
 [ -f "$HOME/.okboard-test" ] && . $HOME/.okboard-test
 export QML2_IMPORT_PATH="$mydir/qml"
 export OKBOARD_TEST_DIR
-rm -f "$OKBOARD_TEST_DIR/okboard.cf" # always start with default params
+[ -n "$dont_reset_conf" ] || rm -f "$OKBOARD_TEST_DIR/okboard.cf" # always start with default params
 echo "Test directory: $OKBOARD_TEST_DIR"
 
 machine=`uname -m`
@@ -59,4 +72,9 @@ fi
 systemctl --user stop maliit-server.service
 killall maliit-server 2>/dev/null || true
 echo "Starting maliit-server ..."
-maliit-server &
+if [ -n "$no_detach" ] ; then
+    # no detach
+    maliit-server 2>&1
+else
+    maliit-server &
+fi
