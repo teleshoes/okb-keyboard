@@ -613,7 +613,7 @@ Item {
     }
 
     function commitWord(word) {
-        curve.commitWord(word, true);
+        curve.commitWord(word, true, undefined);
     }
 
 }

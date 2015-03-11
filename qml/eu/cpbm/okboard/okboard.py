@@ -43,6 +43,7 @@ class Okboard:
 
         # add error management wrappers (this is probably no more necessary with pyotherside 1.2 error handler)
         self.guess = self.exception_wrapper(self.predict.guess)
+        self.backtrack = self.exception_wrapper(self.predict.backtrack)
         self.update_surrounding = self.exception_wrapper(self.predict.update_surrounding)
         self.get_predict_words = self.exception_wrapper(self.predict.get_predict_words)
         self.update_preedit = self.exception_wrapper(self.predict.update_preedit)

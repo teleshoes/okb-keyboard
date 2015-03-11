@@ -72,6 +72,13 @@ Canvas {
     property double timer_last;
     property string timer_str;
 
+    property double last_commit: 0;
+    property int backtrack_timeout: 0;
+
+    property bool last_capitalize1: false;
+    property bool last_capitalize2: false;
+
+
     CurveKB {
         id: curveimpl
         onMatchingDone: { matching_done(candidates); }
@@ -123,11 +130,12 @@ Canvas {
     }
 
     function perf_timer(name) {
-        var now = (new Date()).getTime()
+        var d = new Date()
+        var now = d.getTime()
         if (name) {
             timer_str += " " + name + "=" + (now - timer_last)
         } else {
-            timer_str = "Perf>"
+            timer_str = "Perf> " + d.toLocaleTimeString() + " [" + (now % 1000) + "]"
         }
         timer_last = now
     }
@@ -150,7 +158,7 @@ Canvas {
 
         update_surrounding()
     }
-    
+
     function apply_configuration(conf) {
         if (conf && conf["unchanged"]) {
             // no configuration change
@@ -179,6 +187,9 @@ Canvas {
 
             // curve matching plugin parameters
             curveimpl.loadParameters(conf['curve_params']);
+
+            // backtracking
+            backtrack_timeout = conf['backtrack_timeout'] || 3;
 
             conf_ok = true;
             orientation_disable =  conf['disable']
@@ -249,7 +260,7 @@ Canvas {
         py.call("okboard.k.guess", [ candidates, correlation_id, speed ], function(result) {
             perf_timer("predict")
             if (result && result.length > 0) {
-                commitWord(result, false);
+                commitWord(result, false, correlation_id);
             }
         })
 
@@ -376,7 +387,7 @@ Canvas {
         keys_ok = true
     }
 
-    function commitWord(text, replace) {
+    function commitWord(text, replace, correlation_id) {
         // when replace is true, we replace the existing preedit (this is used when the user click on the prediction bar to choose an alternate word)
 
         // word regexp
@@ -429,27 +440,32 @@ Canvas {
                 }
 
             } else if (pos > 0) { // Add a space if needed
-                var lastc = txt.substr(pos - 1, 1)
+                var lastc = txt.substr(pos - 1, 1);
                 if (lastc != ' ' && lastc != '-' && lastc != '\'') { MInputMethodQuick.sendCommit(' '); }
                 if (".?!".indexOf(lastc) >= 0) { forceAutocaps = true; }
             }
         }
 
-        // Auto-capitalize
-        if (keyboard.autocaps || forceAutocaps) {
-            text = text.substr(0,1).toLocaleUpperCase() + text.substr(1);
-        }
 
         // Add new word as preedit
         if (text.length > 0) {
+
+            // Auto-capitalize
+            last_capitalize2 = last_capitalize1;
+            last_capitalize1 = false;
+            if (keyboard.autocaps || forceAutocaps) {
+                text = text.substr(0,1).toLocaleUpperCase() + text.substr(1);
+                last_capitalize1 = true;
+            }
+
             if (replace) {
-                var old = keyboard.inputHandler.preedit
-                MInputMethodQuick.sendCommit(text)
+                var old = keyboard.inputHandler.preedit;
+                MInputMethodQuick.sendCommit(text);
                 if (preedit_ok) {
-                    MInputMethodQuick.sendPreedit("", undefined);  
+                    MInputMethodQuick.sendPreedit("", undefined);
                     keyboard.inputHandler.preedit = "";
                 }
-                py.call("okboard.k.replace_word", [ old, text ])
+                py.call("okboard.k.replace_word", [ old, text ]);
             } else {
                 if (rpl_len) {
                     if (preedit_ok) {
@@ -473,12 +489,57 @@ Canvas {
             expectedPos = MInputMethodQuick.cursorPosition;
         }
 
-        perf_timer("commit_done")
-        log(timer_str)
+        perf_timer("commit_done");
+        log(timer_str);
+
+        // start backtracking processing
+        if ((text.length == 0) || replace || (! MInputMethodQuick.surroundingTextValid)) {
+            last_commit = 0;
+            return;
+        }
+
+        var now = (new Date()).getTime() / 1000;
+        if (backtrack_timeout && now - last_commit < backtrack_timeout) {
+            py.call("okboard.k.backtrack", [ correlation_id ], function(params) { backtracking_done(params); });
+        }
+        last_commit = now
+    }
+
+    function backtracking_done(params) {
+        log("Debug backtracking:", params, MInputMethodQuick.surroundingText, MInputMethodQuick.cursorPosition, keyboard.preedit); // @todo remove this
+
+        if (params && params.length) {
+            var w1_new = params[0];
+            var w2_new = params[1];
+            var w1_old = params[2];
+            var w2_old = params[3];
+            var correlation_id = params[4];
+            var capitalize = /* params[5]; */ last_capitalize2;
+
+            var txt = MInputMethodQuick.surroundingText;
+            var pos = MInputMethodQuick.cursorPosition;
+
+            var startpos = txt.length - w1_old.length - 1;
+            if (txt.substr(startpos) == w1_old + ' ' && keyboard.preedit == w2_old) {
+                // current context has expected value: proceed with word replacement
+
+                log("backtracking OK"); // @todo remove
+
+                // replace word 1 as normal text
+                if (capitalize) {
+                    w1_new = w1_new.substr(0,1).toLocaleUpperCase() + w1_new.substr(1);
+                }
+                MInputMethodQuick.sendCommit(w1_new + " ", startpos - pos, w1_old.length + 1);
+
+                // replace word 2 as preedit (at least we can easily correct this one)
+                MInputMethodQuick.sendPreedit(w2_new, undefined);
+                keyboard.inputHandler.preedit = w2_new;
+            }
+        }
     }
 
     function insertSpace() {
-        commitWord("", false);
+        commitWord("", false, undefined);
     }
 
     function get_predict_words(callback) {
