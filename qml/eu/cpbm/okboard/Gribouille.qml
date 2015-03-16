@@ -115,7 +115,12 @@ Canvas {
 
     function update_surrounding() {
         if (MInputMethodQuick.surroundingTextValid) {
-            py.call("okboard.k.update_surrounding", [ MInputMethodQuick.surroundingText, MInputMethodQuick.cursorPosition ])
+            py.call("okboard.k.update_surrounding", [ MInputMethodQuick.surroundingText, MInputMethodQuick.cursorPosition ], function(result) {
+                if (result) {
+                    // we get some information about typed word -> send them to curve plugin
+                    curveimpl.learn(result[0], result[1]);
+                }
+            } )
         } else {
             py.call("okboard.k.update_surrounding", [ "", -1 ])
         }
