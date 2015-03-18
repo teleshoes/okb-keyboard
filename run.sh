@@ -16,11 +16,13 @@ ENGINE=`realpath "$ENGINE"`
 
 no_detach=
 dont_reset_conf=
+debug=
 while [ -n "$1" ] ; do
     case "$1" in
 	-n) no_detach=1 ;;
 	-c) dont_reset_conf=1 ;;
-	*) die "usage: "`basename "$0"`" [-n] [-c]" ;;
+	-g) debug=1 ;;
+	*) die "usage: "`basename "$0"`" [-n] [-c] [-g]" ;;
     esac
     shift
 done
@@ -72,7 +74,9 @@ fi
 systemctl --user stop maliit-server.service
 killall maliit-server 2>/dev/null || true
 echo "Starting maliit-server ..."
-if [ -n "$no_detach" ] ; then
+if [ -n "$debug" ] ; then
+    gdb --args maliit-server
+elif [ -n "$no_detach" ] ; then
     # no detach
     maliit-server 2>&1
 else
