@@ -511,8 +511,6 @@ Canvas {
     }
 
     function backtracking_done(params) {
-        log("Debug backtracking:", params, MInputMethodQuick.surroundingText, MInputMethodQuick.cursorPosition, keyboard.preedit); // @todo remove this
-
         if (params && params.length) {
             var w1_new = params[0];
             var w2_new = params[1];
@@ -528,7 +526,7 @@ Canvas {
             if (txt.substr(startpos) == w1_old + ' ' && keyboard.preedit == w2_old) {
                 // current context has expected value: proceed with word replacement
 
-                log("backtracking OK"); // @todo remove
+                log("backtracking OK:", w1_old, w2_old, "->", w1_new, w2_new); // @todo remove
 
                 // replace word 1 as normal text
                 if (capitalize) {
@@ -539,6 +537,8 @@ Canvas {
                 // replace word 2 as preedit (at least we can easily correct this one)
                 MInputMethodQuick.sendPreedit(w2_new, undefined);
                 keyboard.inputHandler.preedit = w2_new;
+            } else {
+                log("backtracking FAILED:", txt, "does not match", w1_old, w2_old);
             }
         }
     }
