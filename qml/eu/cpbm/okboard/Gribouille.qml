@@ -526,7 +526,7 @@ Canvas {
             if (txt.substr(startpos) == w1_old + ' ' && keyboard.preedit == w2_old) {
                 // current context has expected value: proceed with word replacement
 
-                log("backtracking OK:", w1_old, w2_old, "->", w1_new, w2_new); // @todo remove
+                log("backtracking OK:", w1_old, w2_old, "->", w1_new, w2_new);
 
                 // replace word 1 as normal text
                 if (capitalize) {

@@ -14,6 +14,14 @@ if [ ! -d "../okb-engine" ]; then
     exit 1
 fi
 
+full=
+if [ "$1" = "-f" ] ; then
+    full=1
+else
+    echo "usage: "`basename "$0"`" [-f]"
+    exit 1
+fi
+
 echo ${DB_VERSION:-0} > db.version
 
 pushd ../okb-engine/ngrams
@@ -59,10 +67,19 @@ for proj in okboard okb-engine ; do
     if ! [ -f "$tar" ] || find . -type f -newer "$tar" | grep '^' >/dev/null ; then
 	git archive -o "$tar" --prefix="$proj-$VERSION/" "$BRANCH"
     fi
-    perl -pi -e 's/^(Version:\s+).*$/${1}'"$VERSION"'/ ; s/^(Release:\s+).*$/${1}'"$RELEASE"'/' rpm/$proj.spec
-    cp -vf rpm/$proj.spec $RPMBUILD/SPECS/
     popd
-    fakeroot rpmbuild -ba $RPMBUILD/SPECS/$proj.spec
+done
+
+if [ -n "$full" ] ; then
+    specs="okboard/rpm/okboard-full.spec"
+else
+    specs="okboard/rpm/okboard.spec okb-engine/rpm/okb-engine.spec"
+fi
+
+for spec in $specs ; do
+    perl -pi -e 's/^(Version:\s+).*$/${1}'"$VERSION"'/ ; s/^(Release:\s+).*$/${1}'"$RELEASE"'/' $spec
+    cp -vf $spec $RPMBUILD/SPECS/
+    fakeroot rpmbuild -ba $RPMBUILD/SPECS/`basename "$spec"`
 done
 
 
