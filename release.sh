@@ -17,7 +17,7 @@ fi
 full=
 if [ "$1" = "-f" ] ; then
     full=1
-else
+elif [ -n "$1" ] ; then
     echo "usage: "`basename "$0"`" [-f]"
     exit 1
 fi
