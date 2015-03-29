@@ -1,6 +1,6 @@
 Name:       okboard
 Summary:    OKboard (Jolla magic keyboard)
-Version:    0.4.7
+Version:    0.4.9
 Release:    1
 Group:      System/GUI/Other
 License:    BSD-like
