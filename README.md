@@ -16,12 +16,31 @@ Limitations
 
 How to build & deploy
 ---------------------
-To build everything (OKBoard + engine) :
-* unpack okboard and okb-engine source code under a common directory
-* if needed, update `version.cf` file with version information (under okboard directory)
-* commit any change to be included (our script use `git archive`)
-* produce RPM packages by running the `release.sh` script from an ARM environment that can run Sailfish build toolchain (SDK, scratchbox, chroot ...)
-* run `deploy.sh <host or IP>` to deploy RPM packages to an existing Jolla phone (this requires ssh keys to connect as root to the phone). Alternatively you can just manually use `rpm -i`
+To build everything (OKBoard + engine):
+
+First get a build environment.
+
+How to prepare a standard Jolla SDK (recommended solution):
+* Start the SDK VM and connect with ssh, e.g.: `ssh -i <SDK install dir>/vmshare/ssh/private_keys/engine/mersdk -p 2222 mersdk@localhost`
+* Run the following command to make sure Scratchbox will build with an ARM target: `sb2-config -d SailfishOS-armv7hl`
+* Enter the scratchbox environment: `sb2`
+* From inside the scratchbox2 enviroment, install required packages: `fakeroot zypper install python3-devel qt5-qtdeclarative-qtquick-devel meego-rpm-config git fakeroot libsailfishapp-devel`
+* Note: You can access your real home directory under ~/share/ if needed
+
+How to prepare an ARM chroot environment (for building on device or with qemu). As you are supposed to know what you're doing, this is just rough overview:
+* Build your chroot environent, e.g. https://together.jolla.com/question/26605/howto-install-a-chroot-for-building-apps/
+* As root, install required packages (cf. zypper command above without "fakeroot")
+* You can now build from unpriviledged user
+
+How to build the RPMs from your build environment:
+* Unpack okboard and okb-engine source code under a common directory
+* If you need to change version number, update `version.cf` file with version information (under okboard directory)
+* If you have done any changes, you'll need to commit them (as our script use `git archive`)
+* Produce RPM packages by running the `release.sh` under okboard source directory. As default, the script will product different RPM files for keyboard, engine and each language file. You can produce an unique RPM file containing everything by adding a `-f` option to the release script (recommended)
+
+How to deploy RPMs to your Jolla phone:
+* You can manually transfer the RPM to your Jolla phone and install it with `rpm -i` (as root)
+* Alternatively, run `deploy.sh <host or IP>` (deploy.sh script is under okboard directory). If you added `-f` option for release, you also have to add it to deploy.sh script. This script requires ssh keys to connect as root to the phone
 * enjoy :-)
 
 How to run
