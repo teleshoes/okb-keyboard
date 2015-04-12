@@ -69,7 +69,7 @@ killall okboard-settings 2>/dev/null || true
 %postun
 rm -f /home/nemo/.config/maliit.org/server.conf
 killall maliit-server 2>&1 || true
-killall maliit-server 2>&1 || true
+killall okboard-settings 2>/dev/null || true
 
 %files
 %defattr(-,root,root,-)
