@@ -25,7 +25,8 @@ How to prepare a standard Jolla SDK (recommended solution):
 * Run the following command to make sure Scratchbox will build with an ARM target: `sb2-config -d SailfishOS-armv7hl`
 * Enter the scratchbox environment: `sb2`
 * From inside the scratchbox2 enviroment, install required packages: `fakeroot zypper install python3-devel qt5-qtdeclarative-qtquick-devel meego-rpm-config git fakeroot libsailfishapp-devel`
-* Note: You can access your real home directory under `~/share/` if needed
+* Make sure nemo user has a `rpmbuild` directory under its home directory with the following subdirectories: BUILD, BUILDROOT, RPMS, SOURCES, SPECS, SRPMS
+* Note: You can access your host home directory under `~/share/` if needed
 
 How to prepare an ARM chroot environment (for building on device or with qemu). As you are supposed to know what you're doing, this is just rough overview:
 * Build your chroot environent, e.g. https://together.jolla.com/question/26605/howto-install-a-chroot-for-building-apps/

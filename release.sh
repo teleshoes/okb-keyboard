@@ -4,6 +4,8 @@ BRANCH="master"
 RPMBUILD="$HOME/rpmbuild"
 
 cd `dirname "$0"`
+pwd=`pwd`
+okboard_dir=`basename "$pwd"`
 
 [ -f "./version.cf" ]
 
@@ -82,7 +84,10 @@ rmdir $tmp_dir
 cd ..
 
 for proj in okboard okb-engine ; do
-    pushd $proj
+    projdir="$proj"
+    [ "$proj" = "okboard" ] && projdir="$okboard_dir"  # workaround for my badly named git repo
+
+    pushd $projdir
     tar="$RPMBUILD/SOURCES/$proj-$VERSION.tar.gz"
     if ! [ -f "$tar" ] || find . -type f -newer "$tar" | grep '^' >/dev/null ; then
 	git archive -o "$tar" --prefix="$proj-$VERSION/" "$BRANCH"
@@ -91,9 +96,9 @@ for proj in okboard okb-engine ; do
 done
 
 if [ -n "$full" ] ; then
-    specs="okboard/rpm/okboard-full.spec"
+    specs="$okboard_dir/rpm/okboard-full.spec"
 else
-    specs="okboard/rpm/okboard.spec okb-engine/rpm/okb-engine.spec"
+    specs="$okboard_dir/rpm/okboard.spec okb-engine/rpm/okb-engine.spec"
 fi
 
 for spec in $specs ; do
@@ -101,6 +106,4 @@ for spec in $specs ; do
     cp -vf $spec $RPMBUILD/SPECS/
     fakeroot rpmbuild -ba $RPMBUILD/SPECS/`basename "$spec"`
 done
-
-
 
