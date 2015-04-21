@@ -1,13 +1,13 @@
 Name:       okboard
 Summary:    OKboard (Jolla magic keyboard)
-Version:    0.4.9
+Version:    0.4.10
 Release:    1
 Group:      System/GUI/Other
 License:    BSD-like
 URL:        file:///dev/null
 Source0:    %{name}-%{version}.tar.gz
 Requires:   pyotherside-qml-plugin-python3-qt5 >= 1.2.0
-Requires:   jolla-keyboard >= 0.4.23.2
+Requires:   jolla-keyboard >= 0.5.5
 Requires:   sailfishsilica-qt5 >= 0.10.9
 BuildRequires:  pkgconfig(Qt5Quick)
 BuildRequires:  pkgconfig(Qt5Qml)

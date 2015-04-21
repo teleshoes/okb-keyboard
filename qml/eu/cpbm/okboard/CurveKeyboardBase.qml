@@ -28,6 +28,7 @@
  */
 
 import QtQuick 2.0
+import Sailfish.Silica 1.0
 import com.meego.maliitquick 1.0
 import com.jolla.keyboard 1.0
 import org.nemomobile.configuration 1.0
@@ -65,6 +66,8 @@ Item {
     property bool shiftKeyPressed
     // counts how many character keys have been pressed since the ActivePoints array was empty
     property int characterKeyCounter
+    property bool closeSwipeActive
+    property int closeSwipeThreshold: Math.max(height*.3, Theme.itemSizeSmall)
 
     // properties for curve-keyboard
     property bool inCurve
@@ -92,6 +95,10 @@ Item {
     height: layout ? layout.height : 0
     onLayoutChanged: if (layout) layout.parent = keyboard
     onPortraitModeChanged: cancelAllTouchPoints()
+
+    // if height changed while touch point was being held
+    // we can't rely on point values anymore
+    onHeightChanged: closeSwipeActive = false
 
     Popper {
         id: popper
@@ -198,10 +205,12 @@ Item {
     }
 
     function handlePressed(touchPoints) {
+        console.log("pipo")
         if (languageSelectionPopup.visible) {
             return
         }
 
+        closeSwipeActive = true
         pressTimer.start()
 
         for (var i = 0; i < touchPoints.length; i++) {
@@ -264,8 +273,9 @@ Item {
             point.y = incomingPoint.y
 
             if (ActivePoints.array.length === 1
+                    && closeSwipeActive
                     && pressTimer.running
-                    && (point.y - point.startY > (height * 0.3))) {
+                    && (point.y - point.startY > closeSwipeThreshold)) {
                 MInputMethodQuick.userHide()
                 if (point.pressedKey) {
                     inputHandler._handleKeyRelease()
@@ -325,16 +335,20 @@ Item {
 
     function handleReleased(touchPoints) {
         if (languageSelectionPopup.visible) {
-            cancelAllTouchPoints()
-            languageSelectionPopup.hide()
-            canvas.layoutRow.switchLayout(languageSelectionPopup.activeCell)
+            if (languageSelectionPopup.opening) {
+                languageSelectionPopup.hide()
+            } else {
+                cancelAllTouchPoints()
+                languageSelectionPopup.hide()
+                canvas.layoutRow.switchLayout(languageSelectionPopup.activeCell)
 
-            // curve kb
-            if (languageSelectionPopup.activeCell > 0) {
-                curve.updateContext(canvas.layoutModel.get(languageSelectionPopup.activeCell).layout);
+                // curve kb
+                if (languageSelectionPopup.activeCell > 0) {
+                    curve.updateContext(canvas.layoutModel.get(languageSelectionPopup.activeCell).layout);
+                }
+
+                return
             }
-
-            return
         }
 
         for (var i = 0; i < touchPoints.length; i++) {

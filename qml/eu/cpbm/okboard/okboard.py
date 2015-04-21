@@ -250,6 +250,7 @@ class Okboard:
                 self.predict.load_db(force_reload = True)
 
         if message: raise Exception(message)  # display as error message
+        self._logversion()
 
     def _reset_db(self, lang):
         self.log("Reseting databases for language %s" % lang)
@@ -285,10 +286,15 @@ class Okboard:
             for log in logs:
                 fname = os.path.join(self.local_dir, log)
                 if os.path.exists(fname) and os.path.getsize(fname) > rotate_size * 1000000:
-                    if log == "predict.log": self.log()  # close log file
+                    if log == "predict.log":
+                        self.log()  # close log file
+                        self._logversion()
                     os.rename(fname, fname + ".bak")
 
         return self.predict.cleanup(**kwargs)
+
+    def _logversion(self):
+        self.log("OKBoard versions: predict=%s keyboard=%s db=%s" % (self.predict.get_version(), self.get_version(), self.get_expected_db_version()))
 
     def close(self):
         self.log("okboard.py exiting ...")

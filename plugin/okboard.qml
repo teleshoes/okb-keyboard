@@ -39,6 +39,7 @@ import com.jolla.keyboard.translations 1.0
 import org.nemomobile.dbus 1.0
 import eu.cpbm.okboard 1.0
 
+
 Item {
     id: canvas
 
@@ -62,7 +63,7 @@ Item {
         activeIndex = Math.max(_layoutModel.getLayoutIndex(layoutConfig.value), 0)
     }
 
-    onPortraitLayoutChanged: keyboard.updateLayoutIfAllowed()
+    onPortraitLayoutChanged: keyboard.updateLayoutIfAllowed(true)
 
     function updateIMArea() {
         if (!MInputMethodQuick.active)
@@ -71,21 +72,20 @@ Item {
         var x = 0, y = 0, width = 0, height = 0;
         var angle = MInputMethodQuick.appOrientation
 
-        // column height doesn't instantly change when topItem changes. workaround by calculating height ourselves
-        var columnHeight = keyboard.height + (topItem.item ? topItem.item.height : 0)
+        var columnHeight = inputItems.effectiveHeight
 
         switch (angle) {
-            case 0:
+        case 0:
             y = MInputMethodQuick.screenHeight - columnHeight
-            case 180:
+        case 180:
             x = (MInputMethodQuick.screenWidth - inputItems.width) / 2
             width = inputItems.width
             height = columnHeight
             break;
 
-            case 270:
+        case 270:
             x = MInputMethodQuick.screenWidth - columnHeight
-            case 90:
+        case 90:
             y = (MInputMethodQuick.screenHeight - inputItems.width) / 2
             width = columnHeight
             height = inputItems.width
@@ -103,6 +103,11 @@ Item {
     }
     function saveCurrentLayoutSetting() {
         layoutConfig.value = _layoutModel.get(activeIndex).layout
+    }
+
+    function switchLayout(index) {
+        layoutRow.switchLayout(index)
+        keyboard.overriddenLayoutFile = ""
     }
 
     InputHandlerManager {
@@ -207,6 +212,13 @@ Item {
         }
     }
 
+    ConfigurationValue {
+        id: splitConfig
+
+        key: "/sailfish/text_input/split_landscape"
+        defaultValue: true
+    }
+
     Item {
         // container at the of current orientation. allows actual keyboard to show relative to that.
         id: root
@@ -233,12 +245,16 @@ Item {
             width: keyboard.width
             anchors.bottom: parent.bottom
 
-            onHeightChanged: {
+            // column height doesn't instantly change when topItem changes. workaround by calculating height ourselves
+            property int effectiveHeight: keyboard.height + (topItem.item && topItem.visible ? topItem.item.height : 0)
+
+            onEffectiveHeightChanged: {
                 if (!showAnimation.running) {
                     updateIMArea()
                 }
             }
 
+            // okboard
             PredictList {
                 id: curvePredictionList
             }
@@ -246,11 +262,16 @@ Item {
             // FIXME: don't unload item when changing temporarily to basic handler
             Loader {
                 id: topItem
-                sourceComponent: (keyboard.curvepreedit?curvePredictionList:keyboard.inputHandler.topItem)
+                /*
+                sourceComponent: keyboard.inputHandler && layoutRow.layout && !layoutRow.layout.splitActive
+                                 ? keyboard.inputHandler.topItem : null
+                */
+                // okboard :
+                sourceComponent: keyboard.inputHandler && layoutRow.layout && !layoutRow.layout.splitActive
+                                 ? (keyboard.curvepreedit?curvePredictionList:keyboard.inputHandler.topItem) : null
                 width: parent.width
                 visible: item !== null
             }
-
 
             CurveKeyboardBase {
                 id: keyboard
@@ -260,6 +281,10 @@ Item {
 
                 property bool fullyOpen
                 property bool expandedPaste: true
+                 // override based on content type, e.g. for chinese revert to english layout on url
+                property int overrideContentType: -1
+                property string overriddenLayoutFile
+                property alias splitEnabled: splitConfig.value
 
                 width: root.width
                 portraitMode: portraitLayout
@@ -272,21 +297,53 @@ Item {
 
                 onModeChanged: layoutRow.layout.visible = mode === "common"
 
-                function updateLayoutIfAllowed() {
+                function updateLayoutIfAllowed(denyOverride) {
                     if (allowLayoutChanges) {
-                        updateLayout()
+                        updateLayout(denyOverride)
                     }
                 }
 
-                function updateLayout() {
+                function updateLayout(denyOverride) {
                     var newMode = mode
 
-                    if (MInputMethodQuick.contentType === Maliit.NumberContentType)
+                    if (MInputMethodQuick.contentType === Maliit.NumberContentType) {
                         newMode = "number"
-                    else if (MInputMethodQuick.contentType === Maliit.PhoneNumberContentType)
+                    } else if (MInputMethodQuick.contentType === Maliit.PhoneNumberContentType) {
                         newMode = "phone"
-                    else
+                    } else {
                         newMode = "common"
+
+                        if (!denyOverride) {
+                            var preferNonComposing = (MInputMethodQuick.contentType !== Maliit.FreeTextContentType
+                                                      || MInputMethodQuick.hiddenText)
+
+                            var newIndex
+                            if (!preferNonComposing && overrideContentType >= 0) {
+                                // Remove override
+                                if (overriddenLayoutFile.length > 0) {
+                                    newIndex = layoutModel.getLayoutIndex(overriddenLayoutFile)
+                                    if (newIndex >= 0) {
+                                        _layoutRow.switchLayout(newIndex)
+                                    }
+                                    overriddenLayoutFile = ""
+                                    inputHandler.active = false
+                                }
+
+                                overrideContentType = -1
+                            } else if (preferNonComposing && overrideContentType != MInputMethodQuick.contentType
+                                       && _layoutRow.layout && _layoutRow.layout.type !== "") {
+                                // apply override, always using english layout.
+                                // do only once per content type to avoid change when focus out+in on an editor
+                                newIndex = layoutModel.getLayoutIndex("en.qml")
+                                if (newIndex >= 0) {
+                                    overrideContentType = MInputMethodQuick.contentType
+                                    overriddenLayoutFile = layoutModel.get(canvas.activeIndex).layout
+                                    _layoutRow.switchLayout(newIndex)
+                                    inputHandler.active = false
+                                }
+                            }
+                        }
+                    }
 
                     if (newMode !== mode) {
                         inputHandler.active = false
@@ -294,38 +351,41 @@ Item {
                     }
 
                     updateInputHandler()
-                    keyboard.updateCurveContext()
+                    keyboard.updateCurveContext() // okboard
                 }
 
                 function updateInputHandler() {
-                    var advancedInputHandler
                     var previousInputHandler = inputHandler
 
-                    var _layout = _layoutRow.layout
-                    var handler = layoutModel.get(canvas.activeIndex).handler
+                    if (MInputMethodQuick.contentType === Maliit.NumberContentType
+                            || MInputMethodQuick.contentType === Maliit.PhoneNumberContentType) {
+                        inputHandler = basicInputHandler
 
-                    if (handler !== "" && _layout && (_layout.type !== "" || MInputMethodQuick.predictionEnabled)) {
-                        advancedInputHandler =  _layoutModel.inputHandlers[handler]
+                    } else {
+                        var handler = layoutModel.get(canvas.activeIndex).handler
+                        var advancedInputHandler =  _layoutModel.inputHandlers[handler]
+                        var _layout = _layoutRow.layout
 
                         if (advancedInputHandler == undefined) {
                             console.warn("invalid inputhandler for " + handler + ", forcing paste input handler")
                             advancedInputHandler = pasteInputHandler
                         }
-                    } else {
-                        advancedInputHandler = pasteInputHandler
-                    }
 
-                    // update active input handler
-                    if (MInputMethodQuick.contentType === Maliit.FreeTextContentType
-                            && !MInputMethodQuick.hiddenText) {
-                        inputHandler = advancedInputHandler
-                    } else if (MInputMethodQuick.contentType === Maliit.NumberContentType
-                               || MInputMethodQuick.contentType === Maliit.PhoneNumberContentType) {
-                        inputHandler = basicInputHandler
-                    } else if (_layout && _layout.type === "hwr") {
-                        inputHandler = advancedInputHandler
-                    } else {
-                        inputHandler = pasteInputHandler
+                        if (handler === "") {
+                            inputHandler = pasteInputHandler
+                        } else if (_layout && _layout.type == "") {
+                            // non-composing
+                            if (MInputMethodQuick.contentType === Maliit.FreeTextContentType
+                                    && !MInputMethodQuick.hiddenText
+                                    && MInputMethodQuick.predictionEnabled) {
+                                inputHandler = advancedInputHandler
+                            } else {
+                                inputHandler = pasteInputHandler
+                            }
+                        } else {
+                            // composing
+                            inputHandler = advancedInputHandler
+                        }
                     }
 
                     if ((previousInputHandler !== inputHandler) && previousInputHandler) {
@@ -342,7 +402,7 @@ Item {
                         GradientStop { position: 1; color: Theme.rgba(Theme.highlightBackgroundColor, .3) }
                     }
                 }
-                
+
                 InputHandler {
                     id: basicInputHandler
                 }
@@ -382,6 +442,15 @@ Item {
                         }
                     }
                 }
+
+                Loader {
+                    sourceComponent: keyboard.inputHandler && layoutRow.layout && layoutRow.layout.splitActive
+                                     ? keyboard.inputHandler.verticalItem : null
+                    width: geometry.middleBarWidth
+                    height: keyboard.height
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    visible: item !== null && !layoutRow.transitionRunning
+                }
             }
         }
 
@@ -390,7 +459,9 @@ Item {
             onActiveChanged: {
                 if (MInputMethodQuick.active) {
                     hideAnimation.stop()
-                    showAnimation.start()
+                    if (!_layoutRow.loading) {
+                        showAnimation.start()
+                    }
                 } else {
                     showAnimation.stop()
                     hideAnimation.start()
@@ -401,6 +472,18 @@ Item {
             onPredictionEnabledChanged: keyboard.updateLayoutIfAllowed()
 
             onFocusTargetChanged: keyboard.allowLayoutChanges = activeEditor
+        }
+
+        Connections {
+            target: _layoutRow
+            onLoadingChanged: {
+                if (!_layoutRow.loading
+                      && MInputMethodQuick.active
+                      && !showAnimation.running
+                      && !keyboard.fullyOpen) {
+                    showAnimation.start()
+                }
+            }
         }
 
         SequentialAnimation {
