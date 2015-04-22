@@ -101,6 +101,7 @@ Canvas {
             if (pos != expectedPos && pos != expectedPos - 1) {
                 curvepreedit = false;
             }
+            update_surrounding()
         }
         onSurroundingTextChanged: {
             update_surrounding()
