@@ -39,13 +39,12 @@ How to build the RPMs from your build environment:
 * Unpack okboard and okb-engine source code under a common directory
 * If you need to change version number, update `version.cf` file with version information (under okboard directory)
 * If you have done any changes, you'll need to commit them (as our script use `git archive`)
-* Produce RPM packages by running the `release.sh` under okboard source directory.
-  By default, the script will product different RPM files for keyboard, engine and each language file.
-  You can produce an unique RPM file containing everything by adding a `-f` command-line option to the `release.sh` script (recommended)
+* Produce RPM package by running the `release.sh` under okboard source directory.
+  By default, the script will produce one RPM file for keyboard, engine and each language file (use `-m` option if you prefer multiple RPMs, this is not recommended)
 
 How to deploy RPMs to your Jolla phone:
 * You can manually transfer the RPM to your Jolla phone and install it with `rpm -i` (as root)
-* Alternatively, run `deploy.sh <host or IP>` (deploy.sh script is under okboard directory). If you added `-f` option for release, you also have to add it to deploy.sh script. This script requires ssh keys to connect as root to the phone
+* Alternatively, run `deploy.sh <host or IP>` (deploy.sh script is under okboard directory). If you added `-m` option for release, you also have to add it to deploy.sh script. This script requires ssh keys to connect as root to the phone
 * enjoy :-)
 
 How to run

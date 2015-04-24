@@ -16,16 +16,16 @@ if [ ! -d "../okb-engine" ]; then
     exit 1
 fi
 
-full=
-if [ "$1" = "-f" ] ; then
-    full=1
-elif [ -n "$1" ] ; then
-    echo "usage: "`basename "$0"`" [-f]"
-    exit 1
-fi
+full=1
+case "$1" in
+    -m) full=0 ; shift ;;
+    -f) true ; shift ;; # backward compatible
+    -*) echo "usage: "`basename "$0"`" [-m]" ; exit 1 ;;
+esac
 
 pushd ../okb-engine/db
-all_lang=`ls *.cf | sed 's/^lang-//' | sed 's/\.cf$//' | tr '\n' ' '`
+all_lang="$LANGS"
+[ -n "$all_lang" ] || all_lang=`ls *.cf | sed 's/^lang-//' | sed 's/\.cf$//' | tr '\n' ' '`
 echo "Language supported: $all_lang"
 for lang in $all_lang ; do
     if [ ! -f "$lang.tre" -o ! -f "predict-$lang.db" -o ! -f "predict-$lang.ng" ] ; then
@@ -52,14 +52,15 @@ popd
 
 
 tmp_dir=`mktemp -d`
-cp -vf ../okb-engine/db/*.{db,ng,tre} $tmp_dir/
+for lang in $all_lang ; do
+    cp -vf ../okb-engine/db/*${lang}.{db,ng,tre} $tmp_dir/
+done
+
 pushd $tmp_dir
-for t in ??.tre ; do
-    lang=`basename $t .tre`
+for lang in $all_lang ; do
     upd=
     version=`$tools_dir/db_param.py "predict-$lang.db" version | awk '{ print $3 }'`
     if [ "$version" != "$DB_VERSION" ] ; then
-	echo $DB_VERSION > db.version
 	echo "Updating DB version: $version -> $DB_VERSION"
 	python3 $tools_dir/db_param.py "predict-$lang.db" version $DB_VERSION
 	upd=1

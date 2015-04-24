@@ -4,12 +4,13 @@
 ARCH="armv7hl"
 
 uninstall=
-full=
-if [ "$1" = "-u" ] ; then
-    uninstall=1 ; shift
-elif [ "$1" = "-f" ] ; then
-    full=1 ; shift
-fi
+full=1
+case "$1" in
+    -m) full=0 ; shift ;;
+    -u) uninstall=1 ; shift ;;
+    -f) true ; shift ;; # backward compatible
+    -*) echo "usage: "`basename "$0"`" [-m|-u]" ; exit 1 ;;
+esac
 
 device="$1"
 if [ -z "$device" ] ; then 
