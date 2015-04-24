@@ -67,7 +67,16 @@ JS="/usr/share/maliit/plugins/com/jolla/$N"
 # check data directory
 if [ -d "$ENGINE/db" ] ; then
     find "$ENGINE/db/" -name '*.tre' | grep '^' >/dev/null || die "$ENGINE/db must contains some .tre & .db files"
-    cp -avfu $ENGINE/db/??.tre $ENGINE/db/predict-??.db $ENGINE/db/predict-??.ng "$OKBOARD_TEST_DIR/"  # allow databases to be modified
+    for tre in "$ENGINE/db/"??.tre ; do
+	lang=`basename "$tre" .tre`
+	if [ ! -f "$OKBOARD_TEST_DIR/$lang.tre" ] || [ "$OKBOARD_TEST_DIR/$lang.tre" -ot "$tre" ] ; then
+	    # replace database in test directory with new version
+	    cp -avf "$ENGINE/db/$lang.tre" "$ENGINE/db/predict-$lang.db" "$ENGINE/db/predict-$lang.ng" "$OKBOARD_TEST_DIR/"
+	    echo "Language $lang: updated"
+	else
+	    echo "Language $lang: no change"
+	fi
+    done
 fi
 
 # restart maliit
