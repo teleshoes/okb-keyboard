@@ -36,6 +36,9 @@ import "touchpointarray.js" as ActivePoints
 import eu.cpbm.okboard 1.0
 import com.jolla 1.0
 
+// curve typing
+import "curves.js" as InProgress
+
 Item {
     id: keyboard
 
@@ -79,6 +82,8 @@ Item {
     property bool curvepreedit: curve.curvepreedit  // just a proxy
     property string curveerror: curve.errormsg // proxy
     property string preedit: inputHandler.preedit?inputHandler.preedit:""
+    property int curveCount
+    property int curveIndex
 
     property QtObject emptyAttributes: Item {
         property bool isShifted
@@ -176,7 +181,7 @@ Item {
         opacity: 1
         anchors.fill: parent
     }
-    
+
     MouseArea {
         enabled: useMouseEvents.value
         anchors.fill: parent
@@ -205,7 +210,6 @@ Item {
     }
 
     function handlePressed(touchPoints) {
-        console.log("pipo")
         if (languageSelectionPopup.visible) {
             return
         }
@@ -219,21 +223,42 @@ Item {
         }
 
         // curve typing
-        if ((touchPoints.length == 1) && curve.ok) {
-            curveStartX = curveLastX = touchPoints[0].x
-            curveStartY = curveLastY = touchPoints[0].y
-            
+        if (curve.ok) {
             if (! curve.keys_ok) {
                 dumpKeys();
             }
-            curve.start(touchPoints[0])
-            inCurve = true
-            disablePopper = false
-            curveDisableTimer.stop()
-            curveDisableTimer.start()
+
+            for(var i = 0; i < touchPoints.length; i++) {
+                if (! inCurve) {
+                    curveCount = 0;
+                    curveIndex = 0;
+                    inCurve = true;
+                    curve.start()
+                }
+
+                var id = touchPoints[i].pointId;
+
+                var cur = {}
+                cur.curveIndex = curveIndex;
+                cur.curveStartX = cur.curveLastX = touchPoints[i].x;
+                cur.curveStartY = cur.curveLastY = touchPoints[i].y;
+                InProgress.set(id, cur);
+
+                curveIndex++;
+                curveCount++;
+
+                curve.addPoint(touchPoints[i], cur.curveIndex);
+                // var s = "==> Curve start #" + id + " " + touchPoints[i].x + "," + touchPoints[i].y; curve.log(s);
+
+                disablePopper = false;
+                curveDisableTimer.stop();
+                curveDisableTimer.start();
+            }
+
         } else {
-            resetCurve()
+            resetCurve();
         }
+        // curve typing end
 
     }
 
@@ -243,25 +268,30 @@ Item {
             return
         }
 
-        // curve drawing
+        // curve typing
         if (inCurve) {
-            if (touchPoints.length == 1) {
-                var point = touchPoints[0]            
-                if (Math.abs(point.x - curveLastX) >= 10 || Math.abs(point.y - curveLastY) >= 10) {
-                    curve.addPoint(point)
-                    curveLastX = point.x
-                    curveLastY = point.y
+            for(var i = 0; i < touchPoints.length; i++) {
+                var id = touchPoints[i].pointId;
+
+                var point = touchPoints[i];
+                var cur = InProgress.get(id);
+
+                if (Math.abs(point.x - cur.curveLastX) >= 10 || Math.abs(point.y - cur.curveLastY) >= 10) {
+                    curve.addPoint(point, cur.curveIndex);
+                    cur.curveLastX = point.x;
+                    cur.curveLastY = point.y;
+                    // var s = "==> Curve point #" + id + " " + touchPoints[i].x + "," + touchPoints[i].y; curve.log(s);
+                    InProgress.set(id, cur); // needed ?
                 }
-                if (Math.abs(point.x - curveStartX) >= 50 || Math.abs(point.y - curveStartY) >= 50) {
+                if ((Math.abs(point.x - cur.curveStartX) >= 50 || Math.abs(point.y - cur.curveStartY) >= 50) && ! disablePopper) {
                     disablePopper = true;
                     cancelAllTouchPoints();
-                    curveDisableTimer.stop()
+                    curveDisableTimer.stop();
                 }
-            } else {
-                resetCurve()
             }
             if (disablePopper) { return; }
         }
+        // curve typing end
 
         for (var i = 0; i < touchPoints.length; i++) {
             var incomingPoint = touchPoints[i]
@@ -382,14 +412,36 @@ Item {
             characterKeyCounter = 0
         }
         languageSwitchTimer.stop()
+
+        // curve typing
         if (inCurve) {
-            curve.done(disablePopper)
+            for(var i = 0; i < touchPoints.length; i++) {
+                var id = touchPoints[i].pointId;
+                var point = touchPoints[i];
+                var cur = InProgress.get(id);
+
+                // var s = "==> Curve end #" + id + " " + touchPoints[i].x + "," + touchPoints[i].y; curve.log(s);
+                curve.endCurve(cur.curveIndex);
+                curveCount --;
+                InProgress.remove(id);
+            }
+            if (curveCount == 0) {
+                // curve.log("==> Curve completed");
+                curve.done(disablePopper);
+                inCurve = false;
+            }
         }
+        // curve typing end
     }
 
     function handleCanceled(touchPoints) {
         for (var i = 0; i < touchPoints.length; i++) {
             cancelTouchPoint(touchPoints[i].pointId)
+        }
+
+        // curve typing
+        if (inCurve) {
+            resetCurve();
         }
     }
 
@@ -595,7 +647,7 @@ Item {
         if (! item) { return; }
         var array_out = new Array;
 
-        if (typeof item.keyType !== 'undefined' && item.enabled === true && 
+        if (typeof item.keyType !== 'undefined' && item.enabled === true &&
             item.keyType === KeyType.CharacterKey && item.caption >= 'a' && item.caption <= 'z') {
 
             var key_info = new Object;
@@ -618,7 +670,7 @@ Item {
                 array_out.push(key_info);
             }
         }
-        
+
         return array_out;
     }
 

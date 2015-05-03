@@ -49,7 +49,6 @@ Canvas {
     property bool curvepreedit: false
     property int  expectedPos
 
-    property int count: 0
     property var lastPoints
 
     property string config_dir: ""
@@ -219,18 +218,21 @@ Canvas {
             return;
         }
 
-        if (lastPoints.length >= 2) {
-            ctx.beginPath();
-            ctx.strokeStyle = Theme.highlightColor;
-            ctx.lineCap = "round";
-            ctx.lineWidth = 10;
-            ctx.moveTo(lastPoints[0][0], lastPoints[0][1]);
-            for (var i = 1; i <= lastPoints.length - 1; i ++) {
-                ctx.lineTo(lastPoints[i][0], lastPoints[i][1]);
+        for (var index = 0; index < lastPoints.length; index ++) {
+            var crv = lastPoints[index];
+            if (crv.length >= 2) {
+                ctx.beginPath();
+                ctx.strokeStyle = Theme.highlightColor;
+                ctx.lineCap = "round";
+                ctx.lineWidth = 10;
+                ctx.moveTo(crv[0].x, crv[0].y);
+                for (var i = 1; i <= crv.length - 1; i ++) {
+                    ctx.lineTo(crv[i].x, crv[i].y);
+                }
+                ctx.stroke();
+                ctx.closePath();
+                lastPoints[index] = [ crv[crv.length - 1] ];
             }
-            ctx.stroke();
-            ctx.closePath();
-            lastPoints = [ lastPoints[lastPoints.length - 1] ]
         }
     }
 
@@ -284,40 +286,50 @@ Canvas {
     }
 
 
-    function start(point) {
+    function start() {
         perf_timer(undefined)
 
         cleanupTimer.stop();
 
-        lastPoints.push([point.x, point.y]);
-        curveimpl.startCurve(point.x, point.y);
-        started = true
+        // @TODO plug NEW API: curveimpl.startCurve();
+        started = true;
 
         start_time = (new Date()).getTime() / 1000;
-        curve_length = 0
+        curve_length = 0;
 
         // update configuration if needed
         if (start_time > last_conf_update + 10) {
             last_conf_update = start_time;
-            get_config()
+            get_config();
         }
 
-        errormsg = ""  // reset any previous error message
+        errormsg = ""; // reset any previous error message
     }
 
-    function addPoint(point) {
-        var lastPoint = lastPoints[lastPoints.length - 1]
-        curve_length += Math.sqrt(Math.pow(lastPoint[0] - point.x, 2) + Math.pow(lastPoint[1] - point.y, 2))
+    function addPoint(point, index) {
+        // @TODO plug NEW API: curveimpl.addPoint(point.x, point.y, index);
+        if (index == 0) { if (lastPoints.length) { curveimpl.addPoint(point.x, point.y); } else { curveimpl.startCurve(point.x, point.y); } } // @TODO remove OLD API call
 
-        curveimpl.addPoint(point.x, point.y);
-        lastPoints.push([point.x, point.y]);
+        while(lastPoints.length <= index) { lastPoints.push([]); }
 
-        count += 1;
-        if (count >= 3) {
+        if (lastPoints[index].length) {
+            var lastPoint = lastPoints[index][lastPoints[index].length - 1];
+            curve_length += Math.sqrt(Math.pow(lastPoint.x - point.x, 2) + Math.pow(lastPoint.y - point.y, 2));
+        }
+
+        var npt = Object();
+        npt.x = point.x;
+        npt.y = point.y;
+        lastPoints[index].push(npt);
+
+        if (lastPoints[index].length > 3) {
             // draw 3 points at a time (a repaint for each curve point slows down the device too much)
             requestPaint();
-            count = 0;
         }
+    }
+
+    function endCurve(index) {
+        // @TODO plug NEW API: curveimpl.endOneCurve(index)
     }
 
     function updateContext(layout, mode) {
