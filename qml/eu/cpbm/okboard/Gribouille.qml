@@ -291,7 +291,7 @@ Canvas {
 
         cleanupTimer.stop();
 
-        // @TODO plug NEW API: curveimpl.startCurve();
+        curveimpl.startCurve(); // new API
         started = true;
 
         start_time = (new Date()).getTime() / 1000;
@@ -307,8 +307,8 @@ Canvas {
     }
 
     function addPoint(point, index) {
-        // @TODO plug NEW API: curveimpl.addPoint(point.x, point.y, index);
-        if (index == 0) { if (lastPoints.length) { curveimpl.addPoint(point.x, point.y); } else { curveimpl.startCurve(point.x, point.y); } } // @TODO remove OLD API call
+        curveimpl.addPoint(point.x, point.y, index); // new API
+        // old API: if (index == 0) { if (lastPoints.length) { curveimpl.addPoint(point.x, point.y); } else { curveimpl.startCurve(point.x, point.y); } }
 
         while(lastPoints.length <= index) { lastPoints.push([]); }
 
@@ -329,7 +329,7 @@ Canvas {
     }
 
     function endCurve(index) {
-        // @TODO plug NEW API: curveimpl.endOneCurve(index)
+        curveimpl.endOneCurve(index); // new API
     }
 
     function updateContext(layout, mode) {
