@@ -217,9 +217,14 @@ Item {
         closeSwipeActive = true
         pressTimer.start()
 
-        for (var i = 0; i < touchPoints.length; i++) {
-            var point = ActivePoints.addPoint(touchPoints[i])
-            updatePressedKey(point, true)
+        if (! inCurve) {
+            // curve typing: take over multi-touch operations
+
+            for (var i = 0; i < touchPoints.length; i++) {
+                var point = ActivePoints.addPoint(touchPoints[i])
+                updatePressedKey(point, true)
+            }
+
         }
 
         // curve typing
@@ -234,6 +239,10 @@ Item {
                     curveIndex = 0;
                     inCurve = true;
                     curve.start()
+
+                    disablePopper = false;
+                    curveDisableTimer.stop();
+                    curveDisableTimer.start();
                 }
 
                 var id = touchPoints[i].pointId;
@@ -250,9 +259,6 @@ Item {
                 curve.addPoint(touchPoints[i], cur.curveIndex);
                 // var s = "==> Curve start #" + id + " " + touchPoints[i].x + "," + touchPoints[i].y; curve.log(s);
 
-                disablePopper = false;
-                curveDisableTimer.stop();
-                curveDisableTimer.start();
             }
 
         } else {
@@ -283,10 +289,12 @@ Item {
                     // var s = "==> Curve point #" + id + " " + touchPoints[i].x + "," + touchPoints[i].y; curve.log(s);
                     InProgress.set(id, cur); // needed ?
                 }
-                if ((Math.abs(point.x - cur.curveStartX) >= 50 || Math.abs(point.y - cur.curveStartY) >= 50) && ! disablePopper) {
-                    disablePopper = true;
-                    cancelAllTouchPoints();
-                    curveDisableTimer.stop();
+                if (! disablePopper) {
+                    if (Math.abs(point.x - cur.curveStartX) >= 50 || Math.abs(point.y - cur.curveStartY) >= 50 || curveCount >= 2) {
+                        disablePopper = true;
+                        cancelAllTouchPoints();
+                        curveDisableTimer.stop();
+                    }
                 }
             }
             if (disablePopper) { return; }
