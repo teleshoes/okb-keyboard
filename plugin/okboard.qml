@@ -258,6 +258,9 @@ Item {
             PredictList {
                 id: curvePredictionList
             }
+            VerticalPredictList {
+                id: curveVerticalPredictionList
+            }
 
             // FIXME: don't unload item when changing temporarily to basic handler
             Loader {
@@ -444,8 +447,14 @@ Item {
                 }
 
                 Loader {
+                    /*
                     sourceComponent: keyboard.inputHandler && layoutRow.layout && layoutRow.layout.splitActive
                                      ? keyboard.inputHandler.verticalItem : null
+                    */
+                    // okboard
+                    sourceComponent: keyboard.inputHandler && layoutRow.layout && layoutRow.layout.splitActive
+                                     ? (keyboard.curvepreedit?curveVerticalPredictionList:keyboard.inputHandler.verticalItem) : null
+
                     width: geometry.middleBarWidth
                     height: keyboard.height
                     anchors.horizontalCenter: parent.horizontalCenter
