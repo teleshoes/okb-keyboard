@@ -9,3 +9,4 @@ okboard.cf
 .ropeproject
 Makefile
 db.version
+cf.version

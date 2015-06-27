@@ -39,6 +39,7 @@ pwd=`pwd`
 tools_dir="$pwd/../okb-engine/tools"
 
 echo ${DB_VERSION:-0} > db.version
+echo ${CF_VERSION:-0} > cf.version
 
 pushd ../okb-engine/ngrams
 find build/ -name 'lib.*' -type d | xargs rm -rf  # remove build dir (in case of older version in build dir)

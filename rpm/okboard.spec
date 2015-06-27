@@ -34,6 +34,7 @@ make
 echo "%{version}-%{release} build: "`date` > okboard.version
 
 cat version.cf | grep '^DB_VERSION' | cut -d'=' -f 2 | tr -cd '0-9' > db.version
+cat version.cf | grep '^CF_VERSION' | cut -d'=' -f 2 | tr -cd '0-9' > cf.version
 
 %install
 rm -rf %{buildroot}
@@ -56,6 +57,7 @@ cp okboard.png %{buildroot}%{_datadir}/icons/hicolor/86x86/apps
 
 cp okboard.version %{buildroot}/%{qml_maliit_dir}
 cp db.version %{buildroot}/%{qml_maliit_dir}
+cp cf.version %{buildroot}/%{qml_maliit_dir}
 
 desktop-file-install --delete-original       \
   --dir %{buildroot}%{_datadir}/applications             \
@@ -83,6 +85,7 @@ killall okboard-settings 2>/dev/null || true
 %{qml_maliit_dir}/Settings.qml
 %{qml_maliit_dir}/okboard.version
 %{qml_maliit_dir}/db.version
+%{qml_maliit_dir}/cf.version
 %{qml_maliit_dir}/pen.png
 %{qml_maliit_dir}/curves.js
 %{qml_maliit_dir}/VerticalPredictList.qml

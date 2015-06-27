@@ -75,8 +75,9 @@ class Okboard:
             except Exception as e:
                 for m in [ "Exception in function %s: %s" % (func.__qualname__, e),
                            traceback.format_exc() ]:
-                    try: self.log(m)
+                    try: self.log(m, force_log = True)  # Error are logged even if log is disabled
                     except: pass
+                self.log()  # flush
                 self.last_error = "Error in %s: %s (see logs)" % (func.__qualname__, str(e))  # exception for display in GUI
                 raise e  # trigger QML error handler
         return wrapper
@@ -106,15 +107,17 @@ class Okboard:
 
         # check version
         save = False
-        db_version = 0
+        cf_version = 0
         try:
-            db_version = int(cp["main"].get("db_version", 0)) if "main" in cp else 0
+            cf_version = int(cp["main"].get("cf_version", 0)) if "main" in cp else 0
         except: pass
 
-        self.expected_db_version = expected_db_version = self.get_expected_db_version()
-        if expected_db_version and db_version != expected_db_version:
-            print("Configuration file mismatch: %s != %s" % (db_version, expected_db_version))
+        self.expected_db_version = self.get_expected_db_version()
+        self.expected_cf_version = expected_cf_version = self.get_expected_cf_version()
+        if expected_cf_version and cf_version != expected_cf_version:
+            print("Configuration file mismatch: %s != %s" % (cf_version, expected_cf_version))
             # we were using a version with an older data scheme --> reset configuration
+            # @todo handle 2 distinct cases: format change (full reset), default curve plugin parameters change (only reset parameter section)
             self.cp = cp = ConfigParser.SafeConfigParser()
             cp.read([ _dist_conf, _default_conf ])
             save = True
@@ -127,7 +130,7 @@ class Okboard:
                 save = True
 
         if save:
-            if expected_db_version: cp["main"]["db_version"] = str(expected_db_version)
+            if expected_cf_version: cp["main"]["cf_version"] = str(expected_cf_version)
             cp["main"]["verbose"] = cp["main"]["log"] = "1" if test_mode else "0"
             cp["main"]["debug"] = "0"
             with open(self.cpfile, 'w') as f: cp.write(f)
@@ -198,7 +201,7 @@ class Okboard:
 
         force_log = kwargs.get("force_log", False)
         message = ' '.join(map(str, args))
-        print(message)
+        print(message.encode("utf-8"))
         if self.cf('log', False, mybool) or force_log:
             if not self.logf:
                 self.logf = open(os.path.join(self.local_dir, "predict.log"), "a")
@@ -280,6 +283,7 @@ class Okboard:
     def _cleanup(self, **kwargs):
         # log rotate
         rotate = self.cf("log_rotate", True, mybool)
+        self.log()  # flush & close log file
         if rotate:
             logs = [ "curve.log", "predict.log" ]
             rotate_size = max(1, self.cf("rotate_mb", 5, int))
@@ -287,7 +291,6 @@ class Okboard:
                 fname = os.path.join(self.local_dir, log)
                 if os.path.exists(fname) and os.path.getsize(fname) > rotate_size * 1000000:
                     if log == "predict.log":
-                        self.log()  # close log file
                         self._logversion()
                     os.rename(fname, fname + ".bak")
 
@@ -299,10 +302,17 @@ class Okboard:
     def close(self):
         self.log("okboard.py exiting ...")
         self.predict.close()
+        self.log()
 
     def get_expected_db_version(self):
         try:
             with open(os.path.join(os.path.dirname(__file__), "db.version"), "r") as f:
+                return int(f.read().strip())
+        except: return None
+
+    def get_expected_cf_version(self):
+        try:
+            with open(os.path.join(os.path.dirname(__file__), "cf.version"), "r") as f:
                 return int(f.read().strip())
         except: return None
 
