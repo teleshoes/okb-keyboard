@@ -104,7 +104,7 @@ Component {
             function update_model() {
                 if (keyboard.curveerror.length > 0) {
                     curvePredictionModel.clear();
-                    var message = keyboard.curveerror.replace(/\n.*$/, '').substr(0, 100)
+                    var message = keyboard.curveerror.replace(/\n.*$/, '')
                     curvePredictionModel.append({'text': message, 'error': true });
                 } else {                    
                     keyboard.get_predict_words(function(result) {
