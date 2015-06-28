@@ -1,6 +1,6 @@
 Name:       okboard-full
 Summary:    OKboard (Jolla magic keyboard)
-Version:    0.5.1.1
+Version:    0.5.2
 Release:    1
 Group:      System/GUI/Other
 License:    BSD-like + LGPLv2.1
@@ -9,6 +9,7 @@ Source0:    okboard-%{version}.tar.gz
 Source1:    okb-engine-%{version}.tar.gz
 Source2:    okb-lang-fr.tar.bz2
 Source3:    okb-lang-en.tar.bz2
+Source4:    okb-lang-nl.tar.bz2
 Requires:   pyotherside-qml-plugin-python3-qt5 >= 1.2.0
 Requires:   jolla-keyboard >= 0.5.5
 Requires:   sailfishsilica-qt5 >= 0.10.9
@@ -31,7 +32,7 @@ Conflicts:  okb-engine
 
 %description
 OKboard maliit plugin and simple settings application.
-This is a standalone package: it includes okb-engine library and language files for English & French.
+This is a standalone package: it includes okb-engine library and language files for English, French & Dutch.
 
 %prep
 %setup -c -n okboard-full -a 0 -a 1
@@ -82,8 +83,9 @@ cp -p ngrams/cdb.so %{buildroot}/%{qml_maliit_dir}
 
 tar xvfj %{SOURCE2}
 tar xvfj %{SOURCE3}
+tar xvfj %{SOURCE4}
 
-for lang in fr en ; do
+for lang in fr en nl ; do
     cat $lang.tre | gzip -c > %{buildroot}/%{share_dir}/$lang.tre.gz
     cat predict-$lang.db | gzip -c > %{buildroot}/%{share_dir}/predict-$lang.db.gz
     cat predict-$lang.ng | gzip -c > %{buildroot}/%{share_dir}/predict-$lang.ng.gz
@@ -148,6 +150,10 @@ killall okboard-settings 2>/dev/null || true
 %{share_dir}/en.tre.gz
 %{share_dir}/predict-en.db.gz
 %{share_dir}/predict-en.ng.gz
+
+%{share_dir}/nl.tre.gz
+%{share_dir}/predict-nl.db.gz
+%{share_dir}/predict-nl.ng.gz
 
 # keyboard
 %doc okboard-%{version}/README.md okboard-%{version}/LICENSE
