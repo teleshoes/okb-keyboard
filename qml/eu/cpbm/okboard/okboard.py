@@ -201,7 +201,10 @@ class Okboard:
 
         force_log = kwargs.get("force_log", False)
         message = ' '.join(map(str, args))
-        print(message.encode("utf-8"))
+
+        try: print(message) # if it fails we'll get the data from the logs
+        except: pass
+
         if self.cf('log', False, mybool) or force_log:
             if not self.logf:
                 self.logf = open(os.path.join(self.local_dir, "predict.log"), "a")
