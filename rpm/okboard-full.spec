@@ -1,6 +1,6 @@
 Name:       okboard-full
 Summary:    OKboard (Jolla magic keyboard)
-Version:    0.5.2
+Version:    0.5.5
 Release:    1
 Group:      System/GUI/Other
 License:    BSD-like + LGPLv2.1
@@ -35,7 +35,7 @@ OKboard maliit plugin and simple settings application.
 This is a standalone package: it includes okb-engine library and language files for English, French & Dutch.
 
 %prep
-%setup -c -n okboard-full -a 0 -a 1
+%setup -c -n okboard-full-%{arch} -a 0 -a 1
 
 %build
 # engine

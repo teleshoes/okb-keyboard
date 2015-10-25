@@ -13,7 +13,7 @@ case "$1" in
 esac
 
 device="$1"
-if [ -z "$device" ] ; then 
+if [ -z "$device" ] ; then
     echo "usage: "`basename "$0"`"[-u|-f] <device name or address>"
     exit 1
 fi
@@ -21,6 +21,13 @@ fi
 cd `dirname "$0"`
 
 . ./version.cf
+
+arch=`ssh nemo@$device uname -m`
+case "$arch" in
+    armv7l) ARCH="armv7hl" ; break ;;  # Jolla phone
+    x86_64) ARCH="i486" ; break ;; # Jolla tablet
+    *) echo "Unknown device ($arch)" ; exit 1 ; break ;;
+esac
 
 rsync -av --include 'okb*' $HOME/rpmbuild/RPMS/ nemo@$device:rpmbuild/RPMS/
 
@@ -42,7 +49,7 @@ rpmf okboard okb-lang-en okb-lang-fr okb-engine
 
 if [ -z "$uninstall" ] ; then
     echo "Path: $RPM_FILES"
-    
+
     ssh root@$device "rpm -i $RPM_FILES"
 fi
 
