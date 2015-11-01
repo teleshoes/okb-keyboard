@@ -76,6 +76,7 @@ ApplicationWindow {
         Page {
             id: page
 
+            allowedOrientations: Orientation.All
 
             SilicaFlickable {
                 id: settings

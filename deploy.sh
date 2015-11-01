@@ -25,7 +25,7 @@ cd `dirname "$0"`
 arch=`ssh nemo@$device uname -m`
 case "$arch" in
     armv7l) ARCH="armv7hl" ; break ;;  # Jolla phone
-    x86_64) ARCH="i486" ; break ;; # Jolla tablet
+    x86_64) ARCH="i586" ; break ;; # Jolla tablet
     *) echo "Unknown device ($arch)" ; exit 1 ; break ;;
 esac
 

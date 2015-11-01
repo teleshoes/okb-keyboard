@@ -393,8 +393,8 @@ class Okboard:
         self._restart_maliit_server()
 
     def stg_about(self):
-        return ABOUT.strip() + "\nEngine: %s\nKeyboard: %s\nDB format: %d\bConfiguration format: %s" % \
-          (self.predict.get_version(), self.get_version(), self.get_expected_db_version(), self.get_expected_cf_version())
+        return ABOUT.strip() + "\nEngine: %s\nKeyboard: %s\nDB format: %s\nConfiguration format: %s" % \
+            (self.predict.get_version(), self.get_version(), self.get_expected_db_version(), self.get_expected_cf_version())
 
 k = Okboard()
 
