@@ -115,7 +115,7 @@ class Okboard:
         self.expected_db_version = self.get_expected_db_version()
         self.expected_cf_version = expected_cf_version = self.get_expected_cf_version()
         if expected_cf_version and cf_version != expected_cf_version:
-            print("Configuration file mismatch: %s != %s" % (cf_version, expected_cf_version))
+            self.log("Configuration file mismatch: %s != %s" % (cf_version, expected_cf_version))
             # we were using a version with an older data scheme --> reset configuration
             # @todo handle 2 distinct cases: format change (full reset), default curve plugin parameters change (only reset parameter section)
             self.cp = cp = ConfigParser.SafeConfigParser()
@@ -255,7 +255,7 @@ class Okboard:
             if self._install_dist_db(lang, force = True):
                 self.predict.load_db(force_reload = True)
 
-        if message: raise Exception(message)  # display as error message
+        if message: self.log(message)  # just log this (no more error message)
         self._logversion()
 
     def _reset_db(self, lang):
@@ -300,7 +300,8 @@ class Okboard:
         return self.predict.cleanup(**kwargs)
 
     def _logversion(self):
-        self.log("OKBoard versions: predict=%s keyboard=%s db=%s" % (self.predict.get_version(), self.get_version(), self.get_expected_db_version()))
+        self.log("OKBoard versions: predict=%s keyboard=%s db=%s cf=%s" % (self.predict.get_version(), self.get_version(),
+                                                                           self.get_expected_db_version(), self.get_expected_cf_version()))
 
     def close(self):
         self.log("okboard.py exiting ...")
@@ -392,7 +393,8 @@ class Okboard:
         self._restart_maliit_server()
 
     def stg_about(self):
-        return ABOUT.strip() + "\nEngine: %s\nKeyboard: %s\nDB format: %d" % (self.predict.get_version(), self.get_version(), self.get_expected_db_version())
+        return ABOUT.strip() + "\nEngine: %s\nKeyboard: %s\nDB format: %d\bConfiguration format: %s" % \
+          (self.predict.get_version(), self.get_version(), self.get_expected_db_version(), self.get_expected_cf_version())
 
 k = Okboard()
 
