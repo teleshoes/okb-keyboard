@@ -11,7 +11,8 @@ It uses okb-engine libraries for gesture recognition and prediction engine.
 Limitations
 -----------
 * This is only intended as a proof of concept so there is no additional feature except gesture typing ability
-* We use files from the Jolla keyboard, so the keyboard may break with any SailfishOS future update (use it at your own risk, but it never happened with update 4 to 11)
+* We use files from the Jolla keyboard, so the keyboard may break with any SailfishOS future update (use it at your own risk)
+* OKBoard is implemented as a separate Maliit plugin, but reuses files & layouts from Jolla Keyboard. It will probably conflict with third party keyboard that act as a layout for the Jolla keyboard (e.g. Dolphin from OpenRepos): just don't use a third party keyboard with OKBoard is activated
 * Jolla does not provide settings to switch between different maliit plugins (keyboards): Current settings app only allows to switch between languages in Jolla keyboard. As a result we provide our keyboard switcher as part of the OKboard setting application: This is a really dirty hack and may cause problems (e.g. conflict with other applications that would do the same)
 
 How to build & deploy
