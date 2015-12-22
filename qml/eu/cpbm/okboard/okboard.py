@@ -58,6 +58,7 @@ class Okboard:
 
         self.last_error = None
         self.cp = None
+        self.cptime = 0
 
         self.init()
         self.log("okboard.py init complete")
@@ -125,7 +126,7 @@ class Okboard:
         # save if needed
         if not os.path.isfile(self.cpfile): save = True
         for s in [ "main", "default", "portrait", "landscape" ]:
-            if s not in cp: # add sections
+            if s not in cp:  # add sections
                 cp[s] = {}
                 save = True
 
@@ -138,9 +139,13 @@ class Okboard:
         self.cptime = os.path.getmtime(self.cpfile)
         self.test_mode = test_mode
 
+    def _default_config(self):
+        if "log" not in self.cp["main"]: self.cp["main"]["log"] = "0"
+        if "debug" not in self.cp["main"]: self.cp["main"]["debug"] = "0"
+
     def _get_config(self, only_if_modified = False):
         """ return some configuration elements for QML part """
-        mtime = os.path.getmtime(self.cpfile)
+        mtime = os.path.getmtime(self.cpfile) if os.path.isfile(self.cpfile) else 0
         cp = self.cp
         if mtime > self.cptime:
             self.cptime = mtime
@@ -168,10 +173,12 @@ class Okboard:
 
     def cf(self, key, default_value, cast = None):
         cp = self.cp
+        if "main" not in cp: cp["main"] = dict()
+
         if key in cp["main"]:
             ret = cp["main"][key]
         else:
-            self._get_config()
+            self._default_config()
             ret = default_value
             cp["main"][key] = str(default_value)
             with open(self.cpfile, 'w') as f: cp.write(f)
@@ -186,6 +193,7 @@ class Okboard:
         return ret
 
     def set_cf(self, key, value):
+        if "main" not in self.cp: self.cp["main"] = dict()
         if key in self.cp["main"] and self.cp["main"][key] == str(value): return
         self.cp["main"][key] = str(value)
         with open(self.cpfile + '.tmp', 'w') as f: self.cp.write(f)
@@ -202,7 +210,7 @@ class Okboard:
         force_log = kwargs.get("force_log", False)
         message = ' '.join(map(str, args))
 
-        try: print(message) # if it fails we'll get the data from the logs
+        try: print(message)  # if it fails we'll get the data from the logs
         except: pass
 
         if self.cf('log', False, mybool) or force_log:
