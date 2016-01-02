@@ -428,9 +428,14 @@ Canvas {
 
         // Processing based on surrounding text
         var forceAutocaps = false;
+        var txt;
+        var pos = -1;
         if (MInputMethodQuick.surroundingTextValid) {
-            var txt = MInputMethodQuick.surroundingText;
-            var pos = MInputMethodQuick.cursorPosition;
+            txt = MInputMethodQuick.surroundingText;
+            pos = MInputMethodQuick.cursorPosition;
+        }
+        if (pos >= 0) {
+            // if surroundingTextValid is truc but cursorPosition is -1, Maliit is just bluffing ... 
 
             // handle curve typing inside a word to replace it
             if (pos < txt.length && word_regex.test(txt[pos]) && ! replace) {
