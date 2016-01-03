@@ -435,7 +435,7 @@ Canvas {
             pos = MInputMethodQuick.cursorPosition;
         }
         if (pos >= 0) {
-            // if surroundingTextValid is truc but cursorPosition is -1, Maliit is just bluffing ... 
+            // if surroundingTextValid is true but cursorPosition is -1, Maliit is just bluffing ... 
 
             // handle curve typing inside a word to replace it
             if (pos < txt.length && word_regex.test(txt[pos]) && ! replace) {
@@ -467,6 +467,11 @@ Canvas {
                 if (lastc != ' ' && lastc != '-' && lastc != '\'') { MInputMethodQuick.sendCommit(' '); }
                 if (".?!".indexOf(lastc) >= 0) { forceAutocaps = true; }
             }
+        } else {
+            // no surroundingText information available: add a trailing space
+            // (this seems to be the same behavior as the standard Jolla keyboard when selecting a word in prediction bar)
+            // (i don't like it, but it is the "least bad" solution at the moment)
+            text = text + ' '
         }
 
 
