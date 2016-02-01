@@ -23,6 +23,13 @@ case "$1" in
     -*) echo "usage: "`basename "$0"`" [-m]" ; exit 1 ;;
 esac
 
+# check DB version is consistent between both project
+engine_version=`cat ../okb-engine/db/db.version`
+[ "$engine_version" != "$DB_VERSION" ] && echo "DB version mismatch between keyboard & engine ($engine_version / $DB_VERSION)" && exit 1
+
+# check we are running in a Sailfish environment
+! rpm -q ssu >/dev/null 2>&1 && echo "This script must be run from a Sailfish environment (SDK, phone, chroot ...) !" && exit 1
+
 pushd ../okb-engine/db
 all_lang="$LANGS"
 [ -n "$all_lang" ] || all_lang=`ls *.cf | sed 's/^lang-//' | sed 's/\.cf$//' | tr '\n' ' '`
