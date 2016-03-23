@@ -1,6 +1,5 @@
 #! /bin/bash -e
 
-BRANCH="master"
 RPMBUILD="$HOME/rpmbuild"
 
 cd `dirname "$0"`
@@ -97,9 +96,10 @@ for proj in okboard okb-engine ; do
     [ "$proj" = "okboard" ] && projdir="$okboard_dir"  # workaround for my badly named git repo
 
     pushd $projdir
+    branch=$(git rev-parse --abbrev-ref HEAD)
     tar="$RPMBUILD/SOURCES/$proj-$VERSION.tar.gz"
     if ! [ -f "$tar" ] || find . -type f -newer "$tar" | grep '^' >/dev/null ; then
-	git archive -o "$tar" --prefix="$proj-$VERSION/" "$BRANCH"
+	git archive -o "$tar" --prefix="$proj-$VERSION/" "$branch"
     fi
     popd
 done

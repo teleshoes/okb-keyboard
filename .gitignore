@@ -2,6 +2,8 @@
 touchpointarray.js
 libcurveplugin.so
 predict.py
+language_model.py
+backend.py
 __pycache__
 okboard-settings
 build

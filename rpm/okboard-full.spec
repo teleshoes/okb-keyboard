@@ -1,6 +1,6 @@
 Name:       okboard-full
 Summary:    OKboard (Jolla magic keyboard)
-Version:    0.5.8
+Version:    0.5.11
 Release:    1
 Group:      System/GUI/Other
 License:    BSD-like + LGPLv2.1
@@ -76,6 +76,8 @@ cp LICENSE LICENSE-keyboard
 mkdir -p %{buildroot}/%{qml_maliit_dir} %{buildroot}/%{share_dir}
 cp -p curve/build/libcurveplugin.so %{buildroot}/%{qml_maliit_dir}
 cp predict.py %{buildroot}/%{qml_maliit_dir}
+cp language_model.py %{buildroot}/%{qml_maliit_dir}
+cp backend.py %{buildroot}/%{qml_maliit_dir}
 cp engine.version %{buildroot}/%{qml_maliit_dir}
 cp okboard.cf %{buildroot}/%{share_dir}
 cp -p ngrams/cfslm.so %{buildroot}/%{qml_maliit_dir}
@@ -138,6 +140,8 @@ killall okboard-settings 2>/dev/null || true
 %defattr(-,root,root,-)
 %{qml_maliit_dir}/libcurveplugin.so
 %{qml_maliit_dir}/predict.py*
+%{qml_maliit_dir}/language_model.py*
+%{qml_maliit_dir}/backend.py*
 %{qml_maliit_dir}/cfslm.so
 %{qml_maliit_dir}/cdb.so
 %{qml_maliit_dir}/engine.version

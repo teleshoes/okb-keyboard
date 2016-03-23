@@ -59,7 +59,9 @@ JS="/usr/share/maliit/plugins/com/jolla/$N"
 [ -L "$qmldir/$N" ] || ln -vs "$JS" "$qmldir/$N"
 
 # symlink to python stuff (avoids declaring new paths)
-[ -L "predict.py" ] || ln -svf "$ENGINE/predict.py" "$qmldir/"
+for py in $ENGINE/*.py ; do
+    [ -L "$ENGINE/"`basename "$py"` ] || ln -svf "$py" "$qmldir/"
+done
 
 # symlink to default preference
 [ -L "$qmldir/okboard.cf" ] || ln -svf "$ENGINE/okboard.cf" "$qmldir/okboard.cf"
