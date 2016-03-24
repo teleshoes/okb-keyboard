@@ -34,7 +34,7 @@ all_lang="$LANGS"
 [ -n "$all_lang" ] || all_lang=`ls *.cf | sed 's/^lang-//' | sed 's/\.cf$//' | tr '\n' ' '`
 echo "Language supported: $all_lang"
 for lang in $all_lang ; do
-    if [ ! -f "$lang.tre" -o ! -f "predict-$lang.db" -o ! -f "predict-$lang.ng" ] ; then
+    if [ ! -f "$lang.tre" -o ! -f "predict-$lang.db" -o ! -f "predict-$lang.ng" -o ! -f "predict-$lang.id" ] ; then
 	echo "Error: missing language files under "`pwd`" directory"
 	exit 1
     fi
@@ -60,7 +60,7 @@ popd
 
 tmp_dir=`mktemp -d`
 for lang in $all_lang ; do
-    cp -vf ../okb-engine/db/*${lang}.{db,ng,tre} $tmp_dir/
+    cp -vf ../okb-engine/db/*${lang}.{db,ng,tre,id} $tmp_dir/
 done
 
 pushd $tmp_dir
@@ -82,10 +82,10 @@ for lang in $all_lang ; do
     if [ -n "$upd" ] ; then
 	python3 $tools_dir/db_reset.py "predict-$lang.db"
 	sleep 1
-	tar cvfj "$RPMBUILD/SOURCES/okb-lang-$lang.tar.bz2" "$lang.tre" "predict-$lang.db" "predict-$lang.ng"
+	tar cvfj "$RPMBUILD/SOURCES/okb-lang-$lang.tar.bz2" "$lang.tre" "predict-$lang.db" "predict-$lang.ng" "predict-$lang.id"
     fi
 done
-rm -f *.{db,ng,tre}
+rm -f *.{db,ng,tre,id}
 popd
 rmdir $tmp_dir
 

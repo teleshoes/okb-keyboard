@@ -256,6 +256,13 @@ class Okboard:
             if self.expected_db_version and db_version != self.expected_db_version:
                 message = "Outdated database (%s/%s) -> Resetting all data" % (db_version, self.expected_db_version)
                 init = True
+            else:
+                current_db_id = self.predict.db.get_param("id", "0")
+                expected_db_id = self.shipped_db_id(self.lang)
+                if expected_db_id and current_db_id != expected_db_id:
+                    # this is a bit harsh. The keyboard should nicely ask to the user (or upgrade without losing user data)
+                    message = "New database shipped with RPM (%s/%s) -> Updating & resetting" % (current_db_id, expected_db_id)
+                    init = True
 
         if init:
             self.predict.close()
@@ -334,6 +341,12 @@ class Okboard:
                 return f.read().strip()
         except:
             return "unknown"
+
+    def shipped_db_id(self, lang):
+        try:
+            with open(os.path.join(Okboard.SHARE_PATH, "predict-%s.id" % lang), "r") as f:
+                return f.read().strip()
+        except: return None
 
     def reset_all(self):
         self.log("Reseting all databases & settings")

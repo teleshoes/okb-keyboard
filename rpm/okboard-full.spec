@@ -1,6 +1,6 @@
 Name:       okboard-full
 Summary:    OKboard (Jolla magic keyboard)
-Version:    0.5.11
+Version:    0.5.12
 Release:    1
 Group:      System/GUI/Other
 License:    BSD-like + LGPLv2.1
@@ -91,6 +91,7 @@ for lang in fr en nl ; do
     cat $lang.tre | gzip -c > %{buildroot}/%{share_dir}/$lang.tre.gz
     cat predict-$lang.db | gzip -c > %{buildroot}/%{share_dir}/predict-$lang.db.gz
     cat predict-$lang.ng | gzip -c > %{buildroot}/%{share_dir}/predict-$lang.ng.gz
+    cp -f predict-$lang.id %{buildroot}/%{share_dir}/predict-$lang.id
 done
 popd
 
@@ -150,14 +151,17 @@ killall okboard-settings 2>/dev/null || true
 %{share_dir}/fr.tre.gz
 %{share_dir}/predict-fr.db.gz
 %{share_dir}/predict-fr.ng.gz
+%{share_dir}/predict-fr.id
 
 %{share_dir}/en.tre.gz
 %{share_dir}/predict-en.db.gz
 %{share_dir}/predict-en.ng.gz
+%{share_dir}/predict-en.id
 
 %{share_dir}/nl.tre.gz
 %{share_dir}/predict-nl.db.gz
 %{share_dir}/predict-nl.ng.gz
+%{share_dir}/predict-nl.id
 
 # keyboard
 %doc okboard-%{version}/README.md okboard-%{version}/LICENSE
