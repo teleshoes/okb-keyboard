@@ -171,7 +171,7 @@ class Okboard:
 
         return result
 
-    def cf(self, key, default_value, cast = None):
+    def cf(self, key, default_value = None, cast = None):
         cp = self.cp
         if "main" not in cp: cp["main"] = dict()
 
@@ -270,8 +270,11 @@ class Okboard:
             if self._install_dist_db(lang, force = True):
                 self.predict.load_db(force_reload = True)
 
-        if message: self.log(message)  # just log this (no more error message)
+        if message: self.log(message)
         self._logversion()
+
+        # display the message as an error
+        if message: raise Exception(message)
 
     def _reset_db(self, lang):
         self.log("Reseting databases for language %s" % lang)
