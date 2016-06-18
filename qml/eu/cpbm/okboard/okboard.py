@@ -60,6 +60,8 @@ class Okboard:
         self.cp = None
         self.cptime = 0
 
+        self._cf_cache = dict()
+
         self.init()
         self.log("okboard.py init complete")
 
@@ -172,6 +174,8 @@ class Okboard:
         return result
 
     def cf(self, key, default_value = None, cast = None):
+        if key in self._cf_cache: return self._cf_cache[key]
+
         cp = self.cp
         if "main" not in cp: cp["main"] = dict()
 
@@ -190,9 +194,13 @@ class Okboard:
                 cp["main"][key] = str(default_value)
                 with open(self.cpfile, 'w') as f: cp.write(f)
                 ret = default_value
+
+        self._cf_cache[key] = ret
         return ret
 
     def set_cf(self, key, value):
+        self._cf_cache.pop(key, None)  # remove from cache
+
         if "main" not in self.cp: self.cp["main"] = dict()
         if key in self.cp["main"] and self.cp["main"][key] == str(value): return
         self.cp["main"][key] = str(value)
