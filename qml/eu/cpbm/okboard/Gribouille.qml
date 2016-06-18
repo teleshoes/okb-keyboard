@@ -435,7 +435,7 @@ Canvas {
             pos = MInputMethodQuick.cursorPosition;
         }
         if (pos >= 0) {
-            // if surroundingTextValid is true but cursorPosition is -1, Maliit is just bluffing ... 
+            // if surroundingTextValid is true but cursorPosition is -1, Maliit is just bluffing ...
 
             // handle curve typing inside a word to replace it
             if (pos < txt.length && word_regex.test(txt[pos]) && ! replace) {
@@ -447,7 +447,7 @@ Canvas {
                     while (p2 < txt.length && word_regex.test(txt[p2])) { p2 ++; }
                     rpl_start = p1 - pos;
                     rpl_len = p2 - p1;
-                    replaced_word = txt.substr(p1, p2);
+                    replaced_word = txt.substr(p1, p2 - p1);
 
                     // handle autocaps in replacements
                     while (p1 > 0 && txt[p1 - 1] == ' ') { p1 --; }
