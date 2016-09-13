@@ -656,7 +656,7 @@ Item {
         var array_out = new Array;
 
         if (typeof item.keyType !== 'undefined' && item.enabled === true &&
-            item.keyType === KeyType.CharacterKey && item.caption >= 'a' && item.caption <= 'z') {
+	    item.caption && item.caption.length == 1) {
 
             var key_info = new Object;
             key_info.x = item.x;
