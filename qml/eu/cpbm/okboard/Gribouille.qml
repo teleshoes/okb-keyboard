@@ -406,7 +406,8 @@ Canvas {
     }
 
     function commitWord(text, replace, correlation_id) {
-        // when replace is true, we replace the existing preedit (this is used when the user click on the prediction bar to choose an alternate word)
+        // when replace is true, we replace the existing preedit (this is used when the
+	// user click on the prediction bar to choose an alternate word)
 
         // word regexp
         var word_regex = /[a-zA-Z\-\'\u0080-\u023F]+/; // \u0400-\u04FF for cyrillic, and so on ...
@@ -535,34 +536,33 @@ Canvas {
 
     function backtracking_done(params) {
         if (params && params.length) {
-            var w1_new = params[0];
-            var w2_new = params[1];
-            var w1_old = params[2];
-            var w2_old = params[3];
-            var correlation_id = params[4];
-            var capitalize = /* params[5]; */ last_capitalize2;
+            var startpos = params[0];
+            var content_old = params[1];
+            var content_new = params[2];
+            var correlation_id = params[3];
+            var capitalize = last_capitalize2;
 
             var txt = MInputMethodQuick.surroundingText;
             var pos = MInputMethodQuick.cursorPosition;
-
-            var startpos = txt.length - w1_old.length - 1;
-            if (txt.substr(startpos) == w1_old + ' ' && keyboard.preedit == w2_old) {
+	    var preedit = keyboard.inputHandler.preedit;
+	    log("Backtracking: startpos=" + startpos + " old=" + content_old + " new=" + content_new +
+		" context=[" + txt + "] pos=" + pos + " preedit=" + preedit);
+	    
+	    if (startpos + content_old.length > pos) {
+		log("Backtracking failed: result overflows after cursor position")
+	    } else if (txt.substr(startpos, content_old.length).toLocaleLowerCase() != content_old.toLocaleLowerCase()) {
+		log("Backtracking failed: text does not match [" + content_old + "] != " +
+		    "[" + txt.substr(startpos, content_old.length) + "], context: " + txt);
+	    } else {
                 // current context has expected value: proceed with word replacement
-
-                log("backtracking OK:", w1_old, w2_old, "->", w1_new, w2_new);
-
-                // replace word 1 as normal text
                 if (capitalize) {
-                    w1_new = w1_new.substr(0,1).toLocaleUpperCase() + w1_new.substr(1);
+		    content_new = content_new.substr(0,1).toLocaleUpperCase() + content_new.substr(1);
                 }
-                MInputMethodQuick.sendCommit(w1_new + " ", startpos - pos, w1_old.length + 1);
 
-                // replace word 2 as preedit (at least we can easily correct this one)
-                MInputMethodQuick.sendPreedit(w2_new, undefined);
-                keyboard.inputHandler.preedit = w2_new;
-            } else {
-                log("backtracking FAILED:", txt, "does not match", w1_old, w2_old);
-            }
+		log("Backtracking successful: [" + content_old + "] -> [" + content_new + "], context: " + txt)
+                MInputMethodQuick.sendCommit(content_new, startpos - pos, content_old.length);
+		MInputMethodQuick.sendPreedit(preedit, undefined);
+	    }
         }
     }
 
