@@ -540,7 +540,7 @@ Canvas {
             var content_old = params[1];
             var content_new = params[2];
             var correlation_id = params[3];
-            var capitalize = last_capitalize2;
+            var capitalize = (startpos == 0);
 
             var txt = MInputMethodQuick.surroundingText;
             var pos = MInputMethodQuick.cursorPosition;

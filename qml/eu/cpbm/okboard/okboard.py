@@ -179,13 +179,17 @@ class Okboard:
         cp = self.cp
         if "main" not in cp: cp["main"] = dict()
 
-        if key in cp["main"]:
+        if self.predict.db and self.predict.db.get_param(key):
+            ret = self.predict.db.get_param(key)
+        elif key in cp["main"]:
             ret = cp["main"][key]
-        else:
+        elif default_value:
             self._default_config()
             ret = default_value
             cp["main"][key] = str(default_value)
             with open(self.cpfile, 'w') as f: cp.write(f)
+        else:
+            raise Exception("No default value for parameter: %s" % key)
 
         if cast:
             try:
@@ -206,6 +210,8 @@ class Okboard:
         self.cp["main"][key] = str(value)
         with open(self.cpfile + '.tmp', 'w') as f: self.cp.write(f)
         os.rename(self.cpfile + '.tmp', self.cpfile)
+
+    def set_db(*args): pass  # for compatibility with test tools
 
     def log(self, *args, **kwargs):
         if not args:
@@ -235,6 +241,8 @@ class Okboard:
 
     def _set_context(self, lang, orientation):
         """ sets language and try to load DB """
+        self._cf_cache = dict()
+
         self.lang = lang
         self.orientation = orientation
         new_dbfile = os.path.join(self.local_dir, "predict-%s.db" % lang)
