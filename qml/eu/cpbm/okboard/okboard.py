@@ -183,7 +183,7 @@ class Okboard:
             ret = self.predict.db.get_param(key)
         elif key in cp["main"]:
             ret = cp["main"][key]
-        elif default_value:
+        elif default_value is not None:
             self._default_config()
             ret = default_value
             cp["main"][key] = str(default_value)
