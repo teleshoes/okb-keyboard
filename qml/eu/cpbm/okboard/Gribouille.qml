@@ -118,7 +118,7 @@ Canvas {
             py.call("okboard.k.update_surrounding", [ MInputMethodQuick.surroundingText, MInputMethodQuick.cursorPosition ], function(result) {
                 if (result) {
                     // we get some information about typed word -> send them to curve plugin
-                    curveimpl.learn(result[0], result[1]);
+                    curveimpl.learn(result[1], 1);
                 }
             } )
         } else {
