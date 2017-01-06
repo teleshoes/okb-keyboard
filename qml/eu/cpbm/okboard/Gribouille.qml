@@ -268,6 +268,8 @@ Canvas {
         py.call("okboard.k.guess", [ candidates, correlation_id, speed ], function(result) {
             perf_timer("predict")
             if (result && result.length > 0) {
+		curveimpl.learn(result, 1); // increase learning count (for user taught words)
+
                 commitWord(result, false, correlation_id);
             }
         })
@@ -415,6 +417,13 @@ Canvas {
         // if preedit is not active, we must directly commit our changes (this happens in Jolla browser URL input field)
         var preedit_ok = (typeof keyboard.inputHandler.preedit != 'undefined');
 
+	// un-learn replaced words
+	if (replace) {
+	    // todo "unlearn" replaced word : curveimpl.learn(...replaced word..., -1) & beware of auto-caps :-)
+	    curveimpl.learn(text, 1);
+	}
+
+
         // Commit existing Xt9* handle preedits
         if ((! replace) && preedit_ok && keyboard.inputHandler.preedit.length > 0) {
             MInputMethodQuick.sendCommit(keyboard.inputHandler.preedit);
@@ -547,7 +556,7 @@ Canvas {
 	    var preedit = keyboard.inputHandler.preedit;
 	    log("Backtracking: startpos=" + startpos + " old=" + content_old + " new=" + content_new +
 		" context=[" + txt + "] pos=" + pos + " preedit=" + preedit);
-	    
+
 	    if (startpos + content_old.length > pos) {
 		log("Backtracking failed: result overflows after cursor position")
 	    } else if (txt.substr(startpos, content_old.length).toLocaleLowerCase() != content_old.toLocaleLowerCase()) {
