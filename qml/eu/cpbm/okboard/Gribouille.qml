@@ -77,6 +77,7 @@ Canvas {
     property bool last_capitalize1: false;
     property bool last_capitalize2: false;
 
+    property string last_guess: ""
 
     CurveKB {
         id: curveimpl
@@ -270,6 +271,8 @@ Canvas {
             if (result && result.length > 0) {
 		curveimpl.learn(result, 1); // increase learning count (for user taught words)
 
+		last_guess = result;
+
                 commitWord(result, false, correlation_id);
             }
         })
@@ -306,6 +309,8 @@ Canvas {
         }
 
         errormsg = ""; // reset any previous error message
+
+	last_guess = "";
     }
 
     function addPoint(point, index) {
@@ -401,10 +406,10 @@ Canvas {
     function loadKeys(keys) {
         if (! keys) { return; }
 
-        curveimpl.loadKeys(keys)
-        log("Keys loaded - count:", keys.length)
+        curveimpl.loadKeys(keys);
+        log("Keys loaded - count:", keys.length);
 
-        keys_ok = true
+        keys_ok = true;
     }
 
     function commitWord(text, replace, correlation_id) {
@@ -419,7 +424,8 @@ Canvas {
 
 	// un-learn replaced words
 	if (replace) {
-	    // todo "unlearn" replaced word : curveimpl.learn(...replaced word..., -1) & beware of auto-caps :-)
+	    // learn new word & "unlearn" replaced word
+	    if (last_guess) { curveimpl.learn(last_guess, -2 /* because we have juste added 1 */); }
 	    curveimpl.learn(text, 1);
 	}
 
