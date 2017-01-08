@@ -8,6 +8,7 @@ ApplicationWindow {
     property bool kb_enabled: false
     property bool pref_log: false
     property bool pref_learn: false
+    property bool pref_backtrack: false
     property string about: "?"
 
     Python {
@@ -23,13 +24,14 @@ ApplicationWindow {
             py.call("okboard.k.stg_get_settings", [ ], function(result) {
                 pref_log = result["log"];
                 pref_learn = result["learn"];
+		pref_backtrack = result["backtrack"];
                 app.kb_enabled = result["enable"];
                 console.log("Settings OK");
 
                 py.call("okboard.k.stg_about", [ ], function(result) {
                     app.about = result;
                 })
-                
+
             })
 
         })
@@ -143,6 +145,19 @@ ApplicationWindow {
                             py.call("okboard.k.stg_set_learn", [ st_learn.checked ]);
                         }
                     }
+
+		    TextSwitch {
+			id: st_backtrack
+                        text: "Enable backtracking"
+                        automaticCheck: true
+                        checked: app.pref_backtrack
+                        description: "Correct past mistakes in the current sentence if they become obvious when there is more context available. This is only activated if you continually swipe words. If you take a break between words, it is assumed you will do needed changes manually"
+                        onCheckedChanged: {
+                            app.pref_learn = st_backtrack.checked
+                            py.call("okboard.k.stg_set_backtrack", [ st_backtrack.checked ]);
+                        }
+                    }
+
 
                     SectionHeader {
                         text: "Administration"

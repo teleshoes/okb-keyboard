@@ -393,7 +393,8 @@ class Okboard:
 
         result = dict(log = self.cf("log", 1, mybool),
                       learn = self.cf("learning_enable", 1, mybool),
-                      enable = keyboard_enabled)
+                      enable = keyboard_enabled,
+                      backtrack = self.cf("backtrack", 1, mybool))
 
         self.log("Settings:", result)
         return result
@@ -416,6 +417,10 @@ class Okboard:
     def stg_set_learn(self, value):
         self.log("Settings: set learning", value)
         self.set_cf("learning_enable", value is True)
+
+    def stg_set_backtrack(self, value):
+        self.log("Settings: set backtracking", value)
+        self.set_cf("backtrack", value is True)
 
     def stg_clear_logs(self):
         logs = [ "curve.log", "predict.log" ]
