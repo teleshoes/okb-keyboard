@@ -1,6 +1,6 @@
 Name:       okboard-full
 Summary:    OKboard (Jolla magic keyboard)
-Version:    0.5.12
+Version:    0.6
 Release:    1
 Group:      System/GUI/Other
 License:    BSD-like + LGPLv2.1
@@ -105,7 +105,8 @@ for file in CurveKeyboardBase.qml okboard.py Gribouille.qml PredictList.qml qmld
     cp -f qml/%{qml_subdir}/$file %{buildroot}/%{qml_maliit_dir}/
 done
 
-cp plugin/okboard.qml %{buildroot}/%{plugin_dir}/
+cp plugin/okboard_sfos*.qml %{buildroot}/%{plugin_dir}/
+cp plugin/set_symlink.sh %{buildroot}/%{plugin_dir}/
 
 cp build/okboard-settings %{buildroot}/%{bin_dir}/
 
@@ -127,11 +128,13 @@ popd
 rm -f /home/nemo/.config/maliit.org/server.conf
 killall maliit-server 2>/dev/null || true
 killall okboard-settings 2>/dev/null || true
+%{plugin_dir}/set_symlink.sh
 
 %postun
 rm -f /home/nemo/.config/maliit.org/server.conf
 killall maliit-server 2>/dev/null || true
 killall okboard-settings 2>/dev/null || true
+rm %{plugin_dir}/okboard.qml
 
 %files
 %defattr(-,root,root,-)
@@ -178,7 +181,8 @@ killall okboard-settings 2>/dev/null || true
 %{qml_maliit_dir}/pen.png
 %{qml_maliit_dir}/curves.js
 %{qml_maliit_dir}/VerticalPredictList.qml
-%{plugin_dir}/okboard.qml
+%{plugin_dir}/okboard_sfos*.qml
+%{plugin_dir}/set_symlink.sh
 %{bin_dir}/okboard-settings
 %{_datadir}/applications/okboard.desktop
 %{_datadir}/icons/hicolor/86x86/apps/okboard.png

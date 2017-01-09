@@ -1,4 +1,4 @@
-#! /bin/sh -e
+#! /bin/bash -e
 # run okboard in test mode:
 #  - all data files are in /tmp (so we don't damage user's "production" databases)
 #  - and restart maliit-server with modified environment & configuration file
@@ -65,6 +65,14 @@ done
 
 # symlink to default preference
 [ -L "$qmldir/okboard.cf" ] || ln -svf "$ENGINE/okboard.cf" "$qmldir/okboard.cf"
+
+# symlink to proper plugin depending on SFOS version
+pre="$mydir/plugin/okboard"
+if [ ! -f "$pre.qml" ] ; then
+    osver="sfos2"
+    if version | awk '{ print $2 }' | grep '^1\.' >/dev/null ; then osver="sfos1" ; fi
+    ln -sf "okboard_${osver}.qml" "$pre.qml"
+fi
 
 # check data directory
 if [ -d "$ENGINE/db" ] ; then
