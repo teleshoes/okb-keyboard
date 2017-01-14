@@ -110,9 +110,13 @@ else
     specs="$okboard_dir/rpm/okboard.spec okb-engine/rpm/okb-engine.spec"
 fi
 
+buildopts=
+arch=$(uname -m)
+if [ "$arch" = "x86_64" ] ; then buildopts="--target i486" ; fi  # tablet uses 32-bit executable files
+
 for spec in $specs ; do
     perl -pi -e 's/^(Version:\s+).*$/${1}'"$VERSION"'/ ; s/^(Release:\s+).*$/${1}'"$RELEASE"'/' $spec
     cp -vf $spec $RPMBUILD/SPECS/
-    fakeroot rpmbuild -ba $RPMBUILD/SPECS/`basename "$spec"`
+    fakeroot rpmbuild -ba $RPMBUILD/SPECS/`basename "$spec"` $buildopts
 done
 
