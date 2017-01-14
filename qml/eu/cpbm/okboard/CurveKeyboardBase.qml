@@ -81,6 +81,7 @@ Item {
     property bool disablePopper
     property bool curvepreedit: curve.curvepreedit  // just a proxy
     property string curveerror: curve.errormsg // proxy
+    property double scaling_ratio: curve.scaling_ratio // idem
     property string preedit: inputHandler.preedit?inputHandler.preedit:""
     property int curveCount
     property int curveIndex
@@ -282,7 +283,8 @@ Item {
                 var point = touchPoints[i];
                 var cur = InProgress.get(id);
 
-                if (Math.abs(point.x - cur.curveLastX) >= 10 || Math.abs(point.y - cur.curveLastY) >= 10) {
+                if (Math.abs(point.x - cur.curveLastX) >= 10 * scaling_ratio
+		    || Math.abs(point.y - cur.curveLastY) >= 10 * scaling_ratio) {
                     curve.addPoint(point, cur.curveIndex);
                     cur.curveLastX = point.x;
                     cur.curveLastY = point.y;
@@ -290,7 +292,9 @@ Item {
                     InProgress.set(id, cur); // needed ?
                 }
                 if (! disablePopper) {
-                    if (Math.abs(point.x - cur.curveStartX) >= 50 || Math.abs(point.y - cur.curveStartY) >= 50 || curveCount >= 2) {
+                    if (Math.abs(point.x - cur.curveStartX) >= 50 * scaling_ratio
+			|| Math.abs(point.y - cur.curveStartY) >= 50 * scaling_ratio
+			|| curveCount >= 2) {
                         disablePopper = true;
                         cancelAllTouchPoints();
                         curveDisableTimer.stop();

@@ -79,6 +79,8 @@ Canvas {
 
     property string last_guess: ""
 
+    property double scaling_ratio: 1
+
     CurveKB {
         id: curveimpl
         onMatchingDone: { matching_done(candidates); }
@@ -225,7 +227,7 @@ Canvas {
                 ctx.beginPath();
                 ctx.strokeStyle = Theme.highlightColor;
                 ctx.lineCap = "round";
-                ctx.lineWidth = 10;
+                ctx.lineWidth = 10 * scaling_ratio;
                 ctx.moveTo(crv[0].x, crv[0].y);
                 for (var i = 1; i <= crv.length - 1; i ++) {
                     ctx.lineTo(crv[i].x, crv[i].y);
@@ -407,7 +409,10 @@ Canvas {
         if (! keys) { return; }
 
         curveimpl.loadKeys(keys);
-        log("Keys loaded - count:", keys.length);
+
+	scaling_ratio = curveimpl.getScalingRatio();
+
+        log("Keys loaded - count: " + keys.length + " - scaling ratio: " + scaling_ratio);
 
         keys_ok = true;
     }
