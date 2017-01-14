@@ -1,6 +1,6 @@
 Name:       okboard-full
 Summary:    OKboard (Jolla magic keyboard)
-Version:    0.6
+Version:    0.6.1
 Release:    1
 Group:      System/GUI/Other
 License:    BSD-like + LGPLv2.1
@@ -48,8 +48,8 @@ make -j 3
 echo "%{version}-%{release} build: "`date` > engine.version
 
 cd ngrams
-python3 setup-fslm.py build_ext --inplace
-python3 setup-cdb.py build_ext --inplace
+CFLAGS="" python3 setup-fslm.py build_ext --inplace
+CFLAGS="" python3 setup-cdb.py build_ext --inplace
 mv cfslm*.so cfslm.so
 mv cdb*.so cdb.so
 popd
