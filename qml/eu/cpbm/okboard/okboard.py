@@ -216,7 +216,7 @@ class Okboard:
     def log(self, *args, **kwargs):
         if not args:
             if self.logf:
-                self.logf.write("\n")
+                self.logf.write("\n".encode('utf-8'))
                 self.logf.close()
                 self.logf = None
             return
