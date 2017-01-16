@@ -227,7 +227,7 @@ Canvas {
                 ctx.beginPath();
                 ctx.strokeStyle = Theme.highlightColor;
                 ctx.lineCap = "round";
-                ctx.lineWidth = 10 * scaling_ratio;
+                ctx.lineWidth = 10; /* slow, removed: * scaling_ratio; */
                 ctx.moveTo(crv[0].x, crv[0].y);
                 for (var i = 1; i <= crv.length - 1; i ++) {
                     ctx.lineTo(crv[i].x, crv[i].y);
