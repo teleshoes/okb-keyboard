@@ -229,8 +229,8 @@ class Okboard:
 
         if self.cf('log', False, mybool) or force_log:
             if not self.logf:
-                self.logf = open(os.path.join(self.local_dir, "predict.log"), "a")
-            self.logf.write(message + "\n")
+                self.logf = open(os.path.join(self.local_dir, "predict.log"), "ab")
+            self.logf.write((message + "\n").encode('utf-8'))
             if force_log:
                 self.logf.close()
                 self.logf = None
