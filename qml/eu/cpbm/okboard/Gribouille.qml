@@ -100,7 +100,7 @@ Canvas {
         target: MInputMethodQuick
         onCursorPositionChanged: {
             var pos = MInputMethodQuick.cursorPosition;
-            if (pos != expectedPos && pos != expectedPos - 1) {
+            if (pos != expectedPos && pos != expectedPos - 1 && ok) {
                 curvepreedit = false;
             }
             update_surrounding()
@@ -203,10 +203,8 @@ Canvas {
             orientation_disable =  conf['disable']
 
         } else {
-            // @todo display error message
-            log("Error loading configuration");
             conf_ok = false;
-            ok = false; // curve typing is disabled
+            show_error("Error loading configuration", true);
         }
     }
 
@@ -412,6 +410,11 @@ Canvas {
 
 	scaling_ratio = curveimpl.getScalingRatio();
 
+	if (scaling_ratio <= 0) {
+	    show_error("Screen size not supported", true);
+	    return;
+	}
+
         log("Keys loaded - count: " + keys.length + " - scaling ratio: " + scaling_ratio);
 
         keys_ok = true;
@@ -594,13 +597,16 @@ Canvas {
         py.call("okboard.k.get_predict_words", [], callback);
     }
 
-    function show_error(traceback) {
-        /* some erreur happened in python or c++ libraries -> notify user */
+    function show_error(traceback, fatal) {
+        /* display error messages to user */
         if (traceback) {
             errormsg = traceback;
             curvepreedit = false;
             curvepreedit = true;
         }
+
+	/* disable swiping in case of unrecoverable error */
+	if (fatal) { ok = false; }
     }
 
 }
