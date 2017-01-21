@@ -81,6 +81,11 @@ Canvas {
 
     property double scaling_ratio: 1
 
+    property int wpm: 0;
+    property double wpm_float: 0;
+    property bool show_wpm: false;
+    property double wpm_last: 0;
+
     CurveKB {
         id: curveimpl
         onMatchingDone: { matching_done(candidates); }
@@ -198,6 +203,9 @@ Canvas {
 
             // backtracking
             backtrack_timeout = conf['backtrack_timeout'] || 3;
+
+	    // WPM indicator
+	    show_wpm = (conf['show_wpm']?true:false); // cast to boolean :)
 
             conf_ok = true;
             orientation_disable =  conf['disable']
@@ -420,6 +428,30 @@ Canvas {
         keys_ok = true;
     }
 
+    function update_wpm(count) {
+	if (! show_wpm) { wpm = 0; return; }
+        var d = new Date()
+        var now = d.getTime() / 1000;
+	if (now - wpm_last > 10 || ! wpm_last) {
+	    wpm_last = now;
+	    wpm = 0;
+	    wpm_float = 0;
+	    return;
+	}
+
+	var coef = Math.exp(- (now - wpm_last) * 0.7 / 15);
+	var value = 60 * count / 5 / (now - wpm_last);
+
+	if (wpm_float) {
+	    wpm_float = wpm_float * coef + value * (1 - coef);
+	} else {
+	    wpm_float = value;
+	}
+
+	wpm = Math.floor(wpm_float);
+	wpm_last = now;
+    }
+
     function commitWord(text, replace, correlation_id) {
         // when replace is true, we replace the existing preedit (this is used when the
 	// user click on the prediction bar to choose an alternate word)
@@ -498,9 +530,13 @@ Canvas {
             text = text + ' '
         }
 
+	var char_count = 0;
+
 
         // Add new word as preedit
         if (text.length > 0) {
+
+	    char_count += text.length;
 
             // Auto-capitalize
             last_capitalize2 = last_capitalize1;
@@ -518,6 +554,7 @@ Canvas {
                     keyboard.inputHandler.preedit = "";
                 }
                 py.call("okboard.k.replace_word", [ old, text ]);
+		char_count -= old.length;
             } else {
                 if (rpl_len) {
                     if (preedit_ok) {
@@ -543,6 +580,8 @@ Canvas {
 
         perf_timer("commit_done");
         log(timer_str);
+
+	update_wpm(char_count);
 
         // start backtracking processing
         if ((text.length == 0) || replace || (! MInputMethodQuick.surroundingTextValid)) {

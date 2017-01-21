@@ -54,17 +54,31 @@ Component {
                 BackgroundItem {
                     height: parent.height
                     width: headerLabel.width + 2 * Theme.paddingMedium
+		    // width: wpm.width + 2 * Theme.paddingMedium
 
                     Image {                       
+			visible: keyboard.wpm == 0
                         id: headerLabel
                         anchors.centerIn: parent
                         source: "pen.png"
                         // unicode characters did not show on all devices, so we
                         // replace it with an image (unfortunately, it does not
                         // use theme colors)
-                    }
+		    }
+		    Text {
+			visible: keyboard.wpm > 0
+			width: parent.width // QTBUG-30896
+			id: wpm
+			horizontalAlignment: Text.AlignHCenter // does not work ???
+			color: Theme.primaryColor
+			font { pixelSize: Theme.fontSizeTiny; family: Theme.fontFamily }
+			text: "WPM\n" + keyboard.wpm
+			anchors.centerIn: parent
+			font.bold: true
+		    }
                 }
             }
+
             
             Component.onCompleted: {
                 update_model()

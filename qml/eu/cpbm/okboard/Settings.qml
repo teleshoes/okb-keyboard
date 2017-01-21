@@ -9,6 +9,7 @@ ApplicationWindow {
     property bool pref_log: false
     property bool pref_learn: false
     property bool pref_backtrack: false
+    property bool pref_wpm: false
     property string about: "?"
 
     Python {
@@ -25,6 +26,7 @@ ApplicationWindow {
                 pref_log = result["log"];
                 pref_learn = result["learn"];
 		pref_backtrack = result["backtrack"];
+		pref_wpm = result["show_wpm"];
                 app.kb_enabled = result["enable"];
                 console.log("Settings OK");
 
@@ -153,8 +155,20 @@ ApplicationWindow {
                         checked: app.pref_backtrack
                         description: "Correct past mistakes in the current sentence if they become obvious when there is more context available. This is only activated if you continually swipe words. If you take a break between words, it is assumed you will do needed changes manually"
                         onCheckedChanged: {
-                            app.pref_learn = st_backtrack.checked
+                            app.pref_backtrack = st_backtrack.checked
                             py.call("okboard.k.stg_set_backtrack", [ st_backtrack.checked ]);
+                        }
+                    }
+
+		    TextSwitch {
+			id: st_wpm
+                        text: "Show typing speed"
+                        automaticCheck: true
+                        checked: app.pref_wpm
+                        description: "Show typing speed as WPM (Words Per Minute)"
+                        onCheckedChanged: {
+                            app.pref_wpm = st_wpm.checked
+                            py.call("okboard.k.stg_set_wpm", [ st_wpm.checked ]);
                         }
                     }
 

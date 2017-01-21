@@ -157,7 +157,8 @@ class Okboard:
         result = dict(config_dir = self.config_dir,
                       local_dir = self.local_dir,
                       log = self.cf("log", 0, mybool),
-                      debug = self.cf("debug", 0, mybool))
+                      debug = self.cf("debug", 0, mybool),
+                      show_wpm = self.cf("show_wpm", 0, mybool))
 
         # curve parameters (depend on orientation)
         params = dict()
@@ -394,7 +395,8 @@ class Okboard:
         result = dict(log = self.cf("log", 1, mybool),
                       learn = self.cf("learning_enable", 1, mybool),
                       enable = keyboard_enabled,
-                      backtrack = self.cf("backtrack", 1, mybool))
+                      backtrack = self.cf("backtrack", 1, mybool),
+                      show_wpm = self.cf("show_wpm", 0, mybool))
 
         self.log("Settings:", result)
         return result
@@ -421,6 +423,10 @@ class Okboard:
     def stg_set_backtrack(self, value):
         self.log("Settings: set backtracking", value)
         self.set_cf("backtrack", value is True)
+
+    def stg_set_wpm(self, value):
+        self.log("Settings: set WPM display", value)
+        self.set_cf("show_wpm", value is True)
 
     def stg_clear_logs(self):
         logs = [ "curve.log", "predict.log" ]

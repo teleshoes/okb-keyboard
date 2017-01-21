@@ -82,6 +82,7 @@ Item {
     property bool curvepreedit: curve.curvepreedit  // just a proxy
     property string curveerror: curve.errormsg // proxy
     property double scaling_ratio: curve.scaling_ratio // idem
+    property string wpm: curve.wpm // idem
     property string preedit: inputHandler.preedit?inputHandler.preedit:""
     property int curveCount
     property int curveIndex
