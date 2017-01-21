@@ -89,6 +89,10 @@ rm -f *.{db,ng,tre,id}
 popd
 rmdir $tmp_dir
 
+pushd ../okb-engine/ngrams
+find build/ -name 'lib.*' -type d | xargs rm -rf  # cleanup ngrams libs after build (possible conflict with dev environment)
+popd
+
 cd ..
 
 for proj in okboard okb-engine ; do
