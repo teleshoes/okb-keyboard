@@ -448,6 +448,8 @@ Canvas {
 	    wpm_float = value;
 	}
 
+	log("[WPM] dt=" + (now - wpm_last) + " value=" + value + " coef=" + coef + " wpm_float=" + wpm_float);
+
 	wpm = Math.floor(wpm_float);
 	wpm_last = now;
     }
