@@ -158,7 +158,7 @@ class Okboard:
                       local_dir = self.local_dir,
                       log = self.cf("log", 0, mybool),
                       debug = self.cf("debug", 0, mybool),
-                      show_wpm = self.cf("show_wpm", 0, mybool))
+                      show_wpm = self.cf("show_wpm", 1 if self.test_mode else 0, mybool))
 
         # curve parameters (depend on orientation)
         params = dict()
@@ -396,7 +396,7 @@ class Okboard:
                       learn = self.cf("learning_enable", 1, mybool),
                       enable = keyboard_enabled,
                       backtrack = self.cf("backtrack", 1, mybool),
-                      show_wpm = self.cf("show_wpm", 0, mybool))
+                      show_wpm = self.cf("show_wpm", 1 if self.test_mode else 0, mybool))
 
         self.log("Settings:", result)
         return result
