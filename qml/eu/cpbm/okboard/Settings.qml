@@ -129,7 +129,7 @@ ApplicationWindow {
                         text: "Enable logs"
                         automaticCheck: true
                         checked: app.pref_log
-                        description: "Logs are automatically rotated from time to time"
+                        description: "Logs can be found in ~/.local/share/okboard/ (all *.log and *.log.bak files). They are automatically rotated from time to time"
                         onCheckedChanged: {
                             app.pref_log = st_log.checked
                             py.call("okboard.k.stg_set_log", [ st_log.checked ]);
