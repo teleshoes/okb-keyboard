@@ -82,9 +82,9 @@ Canvas {
     property double scaling_ratio: 1
 
     property int wpm: 0;
-    property double wpm_float: 0;
     property bool show_wpm: false;
     property double wpm_last: 0;
+    property var wpm_hist;
 
     CurveKB {
         id: curveimpl
@@ -428,29 +428,29 @@ Canvas {
         keys_ok = true;
     }
 
-    function update_wpm(count) {
+    function update_wpm(count, correlation_id) {
 	if (! show_wpm) { wpm = 0; return; }
         var d = new Date()
         var now = d.getTime() / 1000;
 	if (now - wpm_last > 10 || ! wpm_last) {
+	    // reset counter in case of inactivity (10 seconds)
 	    wpm_last = now;
 	    wpm = 0;
-	    wpm_float = 0;
+	    wpm_hist = [];
 	    return;
 	}
 
-	var coef = Math.exp(- (now - wpm_last) * 0.7 / 15);
-	var value = 60 * count / 5 / (now - wpm_last);
+	wpm_hist.push( [ count, wpm_last ] );
 
-	if (wpm_float) {
-	    wpm_float = wpm_float * coef + value * (1 - coef);
-	} else {
-	    wpm_float = value;
-	}
+	// keep an 30 seconds window
+	while (wpm_hist.length > 0 && wpm_hist[0][1] < now - 30) { wpm_hist.shift(); }
 
-	log("[WPM] dt=" + (now - wpm_last) + " value=" + value + " coef=" + coef + " wpm_float=" + wpm_float);
+	var sum = 0;
+	for(var i = 0; i < wpm_hist.length; i ++) { sum += wpm_hist[i][0]; }
+	wpm = Math.floor(60 * sum / 5 / (now - wpm_hist[0][1]))
 
-	wpm = Math.floor(wpm_float);
+	log("[WPM] ID=" + correlation_id + " dt=" + (now - wpm_last) + " wpm=" + wpm + " hist=" + wpm_hist.length);
+
 	wpm_last = now;
     }
 
@@ -583,7 +583,7 @@ Canvas {
         perf_timer("commit_done");
         log(timer_str);
 
-	update_wpm(char_count);
+	update_wpm(char_count, correlation_id);
 
         // start backtracking processing
         if ((text.length == 0) || replace || (! MInputMethodQuick.surroundingTextValid)) {
