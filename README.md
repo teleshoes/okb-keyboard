@@ -52,6 +52,8 @@ How to run
 ----------
 You can activate / deactivate OKboard from the settings application when RPMs are installed.
 
+If enabled, log files can be found in `~/.local/share/okboard/` (all *.log and *.log.bak files).
+
 Test mode: You can also run it from the source directory without installing (helpful for development):
 Just unzip both okb-engine and okboard source code under a common directory and manually build all C/C++ parts with make/qmake.
 Launch `run.sh` script.
