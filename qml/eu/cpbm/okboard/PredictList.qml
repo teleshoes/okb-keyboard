@@ -92,7 +92,9 @@ Component {
            
             delegate: BackgroundItem {
                 onClicked: {
-                    if (! error) {
+                    if (error) {
+			keyboard.clearError();
+		    } else {
                         console.log("Predition word selected:", text);
                         keyboard.commitWord(text);
                     }

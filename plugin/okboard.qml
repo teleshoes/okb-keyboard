@@ -279,7 +279,7 @@ Item {
                 */
                 // okboard :
                 sourceComponent: keyboard.inputHandler && layoutRow.layout && !layoutRow.layout.splitActive
-                                 ? (keyboard.curvepreedit?curvePredictionList:keyboard.inputHandler.topItem) : null
+                                 ? ((keyboard.curvepreedit || keyboard.curveerror)?curvePredictionList:keyboard.inputHandler.topItem) : null
                 width: parent.width
                 visible: item !== null
             }

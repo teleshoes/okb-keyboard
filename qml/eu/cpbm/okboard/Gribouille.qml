@@ -316,8 +316,6 @@ Canvas {
             get_config();
         }
 
-        errormsg = ""; // reset any previous error message
-
 	last_guess = "";
     }
 
@@ -419,8 +417,8 @@ Canvas {
 	scaling_ratio = curveimpl.getScalingRatio();
 
 	if (scaling_ratio <= 0) {
+	    scaling_ratio = 1;
 	    show_error("Screen size not supported", true);
-	    return;
 	}
 
         log("Keys loaded - count: " + keys.length + " - scaling ratio: " + scaling_ratio);
@@ -648,6 +646,10 @@ Canvas {
 
 	/* disable swiping in case of unrecoverable error */
 	if (fatal) { ok = false; }
+    }
+
+    function clearError() {
+	errormsg = "";
     }
 
 }

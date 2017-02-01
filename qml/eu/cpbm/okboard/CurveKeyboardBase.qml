@@ -697,4 +697,8 @@ Item {
         curve.commitWord(word, true, undefined);
     }
 
+    function clearError() {
+	curve.clearError();
+    }
+
 }
