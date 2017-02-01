@@ -1,0 +1,42 @@
+--- okboard_sfos2.qml	2017-01-09 17:38:31.000000000 +0100
++++ okboard_sfos1.qml	2017-01-09 17:38:31.000000000 +0100
+@@ -38,7 +38,7 @@
+ import com.jolla.keyboard.translations 1.0
+ import org.nemomobile.dbus 1.0
+ import eu.cpbm.okboard 1.0
+-import Sailfish.Silica.private 1.0 as SilicaPrivate // SFOS2
++
+ 
+ Item {
+     id: canvas
+@@ -240,14 +240,6 @@
+             effect: ThemeEffect.PressWeak
+         }
+ 
+-	/* SFOS2 */
+-        SilicaPrivate.GlassBackground {
+-            width: keyboard.width
+-            height: inputItems.effectiveHeight
+-            anchors.bottom: parent.bottom
+-            opacity: inputItems.opacity
+-        }
+-
+         Column {
+             id: inputItems
+             width: keyboard.width
+@@ -406,7 +398,6 @@
+                     inputHandler.active = true
+                 }
+ 
+-		/* SFOS2
+                 Rectangle {
+                     anchors.fill: parent
+                     gradient: Gradient {
+@@ -414,7 +405,6 @@
+                         GradientStop { position: 1; color: Theme.rgba(Theme.highlightBackgroundColor, .3) }
+                     }
+                 }
+-		*/
+ 
+                 InputHandler {
+                     id: basicInputHandler

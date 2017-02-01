@@ -5,12 +5,12 @@
 
 ENGINE="../okb-engine"
 
-cd `dirname "$0"`
-mydir=`pwd`
+cd $(dirname "$0")
+mydir=$(pwd)
 
 die() { echo "ERR: $*" ; exit 1 ; }
 
-ENGINE=`realpath "$ENGINE"`
+ENGINE=$(readlink -f "$ENGINE")
 
 [ -d "$ENGINE" ] || die "okb-engine must be unpacked in the same directory as okb-keyboard"
 
@@ -30,9 +30,12 @@ done
 
 
 # set up maliit configuration file
+mkdir -p tmp
 conffile="$HOME/.config/maliit.org/server.conf"
-cat "$mydir/server.conf" | sed 's+^paths=.*+paths='"$mydir/plugin"'+' | tee "$conffile"
-[ -f "$conffile" ] || die "Configuration file not found: $conffile"
+cat "$mydir/server.conf" | sed 's+^paths=.*+paths='"$mydir/tmp"'+' | tee "$conffile"
+
+# set up maliit plugin QML file
+plugin/install_plugin.sh tmp
 
 # environment
 OKBOARD_TEST_DIR=/tmp  # let's use /tmp (beware of tmpfs ram usage)
@@ -65,14 +68,6 @@ done
 
 # symlink to default preference
 [ -L "$qmldir/okboard.cf" ] || ln -svf "$ENGINE/okboard.cf" "$qmldir/okboard.cf"
-
-# symlink to proper plugin depending on SFOS version
-pre="$mydir/plugin/okboard"
-if [ ! -f "$pre.qml" ] ; then
-    osver="sfos2"
-    if version | awk '{ print $2 }' | grep '^1\.' >/dev/null ; then osver="sfos1" ; fi
-    ln -sf "okboard_${osver}.qml" "$pre.qml"
-fi
 
 # check data directory
 if [ -d "$ENGINE/db" ] ; then

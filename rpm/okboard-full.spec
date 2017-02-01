@@ -99,14 +99,15 @@ popd
 pushd okboard-%{version}
 mkdir -p %{buildroot}/%{qml_maliit_dir} %{buildroot}/%{share_dir} %{buildroot}/%{plugin_dir} %{buildroot}/%{bin_dir}
 
-ln -sf /usr/share/maliit/plugins/com/jolla/touchpointarray.js %{buildroot}/%{qml_maliit_dir}/touchpointarray.js 
+ln -sf /usr/share/maliit/plugins/com/jolla/touchpointarray.js %{buildroot}/%{qml_maliit_dir}/touchpointarray.js
 
 for file in CurveKeyboardBase.qml okboard.py Gribouille.qml PredictList.qml qmldir Settings.qml pen.png curves.js VerticalPredictList.qml ; do
     cp -f qml/%{qml_subdir}/$file %{buildroot}/%{qml_maliit_dir}/
 done
 
-cp plugin/okboard_sfos*.qml %{buildroot}/%{plugin_dir}/
-cp plugin/set_symlink.sh %{buildroot}/%{plugin_dir}/
+cp plugin/okboard.qml %{buildroot}/%{share_dir}/
+cp plugin/okboard_2to1.diff %{buildroot}/%{share_dir}/
+cp plugin/install_plugin.sh %{buildroot}/%{share_dir}/
 
 cp build/okboard-settings %{buildroot}/%{bin_dir}/
 
@@ -128,13 +129,13 @@ popd
 rm -f /home/nemo/.config/maliit.org/server.conf
 killall maliit-server 2>/dev/null || true
 killall okboard-settings 2>/dev/null || true
-%{plugin_dir}/set_symlink.sh
+%{share_dir}/install_plugin.sh %{plugin_dir}
 
 %postun
 rm -f /home/nemo/.config/maliit.org/server.conf
 killall maliit-server 2>/dev/null || true
 killall okboard-settings 2>/dev/null || true
-rm %{plugin_dir}/okboard.qml
+rm -f %{plugin_dir}/okboard.qml
 
 %files
 %defattr(-,root,root,-)
@@ -181,8 +182,9 @@ rm %{plugin_dir}/okboard.qml
 %{qml_maliit_dir}/pen.png
 %{qml_maliit_dir}/curves.js
 %{qml_maliit_dir}/VerticalPredictList.qml
-%{plugin_dir}/okboard_sfos*.qml
-%{plugin_dir}/set_symlink.sh
+%{share_dir}/okboard.qml
+%{share_dir}/okboard_2to1.diff
+%{share_dir}/install_plugin.sh
 %{bin_dir}/okboard-settings
 %{_datadir}/applications/okboard.desktop
 %{_datadir}/icons/hicolor/86x86/apps/okboard.png
