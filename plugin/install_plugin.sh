@@ -8,3 +8,5 @@ if version | awk '{ print $2 }' | grep '^1\.' >/dev/null ; then
 else
     cp -f "$mydir/okboard.qml" "$target_dir/okboard.qml"
 fi
+
+chmod 644 "$target_dir/okboard.qml"
