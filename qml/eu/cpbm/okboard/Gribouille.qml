@@ -36,6 +36,8 @@ import Sailfish.Silica 1.0
 import eu.cpbm.okboard 1.0
 import io.thp.pyotherside 1.0
 
+import QtQuick.Window 2.0
+
 Canvas {
     id: curve
     anchors.fill: parent
@@ -413,6 +415,10 @@ Canvas {
         if (! keys) { return; }
 
         curveimpl.loadKeys(keys);
+
+	var x = Screen.width;
+	var y = Screen.height;
+	curveimpl.setScreenSizePixels(x, y);
 
 	scaling_ratio = curveimpl.getScalingRatio();
 
