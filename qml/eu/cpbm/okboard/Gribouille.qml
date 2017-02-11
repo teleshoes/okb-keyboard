@@ -88,6 +88,8 @@ Canvas {
     property double wpm_last: 0;
     property var wpm_hist;
 
+    property int line_width: 10;
+
     CurveKB {
         id: curveimpl
         onMatchingDone: { matching_done(candidates); }
@@ -238,7 +240,7 @@ Canvas {
                 ctx.beginPath();
                 ctx.strokeStyle = Theme.highlightColor;
                 ctx.lineCap = "round";
-                ctx.lineWidth = 10; /* slow, removed: * scaling_ratio; */
+                ctx.lineWidth = line_width;
                 ctx.moveTo(crv[0].x, crv[0].y);
                 for (var i = 1; i <= crv.length - 1; i ++) {
                     ctx.lineTo(crv[i].x, crv[i].y);
@@ -428,7 +430,10 @@ Canvas {
 	if (scaling_ratio <= 0) {
 	    scaling_ratio = 1;
 	    show_error("Screen size not supported", true);
+	    line_width = 10;
 	}
+
+	line_width = Math.floor(10 * scaling_ratio);
 
         log("Keys loaded - count: " + keys.length + " - scaling ratio: " + scaling_ratio);
 
