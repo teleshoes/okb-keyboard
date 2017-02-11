@@ -166,12 +166,15 @@ Canvas {
         py.importModule_sync('okboard');
         log('imported python module');
 
-        // synchronous call because configuration is needed during initialization. Following calls will be asynchronous
-        var result = py.call_sync("okboard.k.get_config", [])
-        apply_configuration(result)
-        log('configuration OK');
+	// asynchronous configuration update
+	// (previous sync way has some issue with SFOS 2.1)
+        py.call("okboard.k.get_config", [], function(result) {
+	    apply_configuration(result);
+            log('configuration OK');
 
-        update_surrounding()
+            update_surrounding();
+	})
+
     }
 
     function apply_configuration(conf) {
