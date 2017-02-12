@@ -61,6 +61,8 @@ Component {
                         id: headerLabel
                         anchors.centerIn: parent
                         source: "pen.png"
+			height: 20 * keyboard.scaling_ratio;
+			width: 20 * keyboard.scaling_ratio;
                         // unicode characters did not show on all devices, so we
                         // replace it with an image (unfortunately, it does not
                         // use theme colors)
