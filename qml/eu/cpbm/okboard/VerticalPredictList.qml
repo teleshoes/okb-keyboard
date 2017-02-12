@@ -39,7 +39,7 @@ import com.jolla 1.0
 
 Component {
     Item {
-        id: verticalCurvePredictionList
+        id: verticalCurvePredictionListView
 
         SilicaListView {
             id: verticalList
@@ -58,6 +58,13 @@ Component {
             Component.onCompleted: {
                 update_model()
             }
+
+	    Connections {
+		// update display when curve context changes
+		target: keyboard
+		onCurvepreeditChanged: { curvePredictionListView.update_model(); }
+		onCurveerrorChanged: { curvePredictionListView.update_model(); }
+	    }
 
             Rectangle {
                 // visual indication to differentiate okboard candidates vs. standard keyboard completion

@@ -89,6 +89,7 @@ Canvas {
     property var wpm_hist;
 
     property int line_width: 10;
+    property int last_pos: -1;
 
     CurveKB {
         id: curveimpl
@@ -109,10 +110,11 @@ Canvas {
         target: MInputMethodQuick
         onCursorPositionChanged: {
             var pos = MInputMethodQuick.cursorPosition;
-            if (pos != expectedPos && pos != expectedPos - 1 && ok) {
+            if (pos != expectedPos && pos != expectedPos - 1 && pos != last_pos + 1 && ok) {
                 curvepreedit = false;
             }
-            update_surrounding()
+            update_surrounding();
+	    last_pos = pos;
         }
         onSurroundingTextChanged: {
             update_surrounding()
@@ -466,7 +468,21 @@ Canvas {
 	wpm_last = now;
     }
 
+    /* try/catch wrapper to display & log errors that occur in QML/js */
+    function safeCall(func, args) {
+	try {
+	    func.apply(null, args);
+	} catch(err) {
+	    show_error(err.message?err.message:message, false);
+	    log("ERROR in function " + func.name + " (line " + err.lineNumber + "): " + err);
+	}
+    }
+
     function commitWord(text, replace, correlation_id) {
+	safeCall(commitWord_internal, [ text, replace, correlation_id ]);
+    }
+
+    function commitWord_internal(text, replace, correlation_id) {
         // when replace is true, we replace the existing preedit (this is used when the
 	// user click on the prediction bar to choose an alternate word)
 
@@ -561,14 +577,37 @@ Canvas {
             }
 
             if (replace) {
-                var old = keyboard.inputHandler.preedit;
-                MInputMethodQuick.sendCommit(text);
-                if (preedit_ok) {
-                    MInputMethodQuick.sendPreedit("", undefined);
-                    keyboard.inputHandler.preedit = "";
-                }
-                py.call("okboard.k.replace_word", [ old, text ]);
-		char_count -= old.length;
+		var old;
+		if (preedit_ok) {
+		    // standard implementation with preedit
+                    old = keyboard.inputHandler.preedit;
+                    MInputMethodQuick.sendCommit(text);
+		    MInputMethodQuick.sendPreedit("", undefined);
+		    keyboard.inputHandler.preedit = "";
+
+		} else if (pos > 0 && last_guess) {
+		    // fallback solution (because jolla keyboard can not do preedits without xt9)
+		    var txt1 = txt;
+		    if (txt1.substr(-1) == ' ') { txt1 = txt1.substr(0, txt1.length - 1); }
+
+		    if (last_guess.toLocaleLowerCase() == txt1.substr(txt1.length - last_guess.length).toLocaleLowerCase()) {
+			if (last_guess != txt1.substr(txt1.length - last_guess.length)) {
+			    // ugly way to detect that we are replacing a word that has been auto-capitalized
+			    // so we have to autocapitalize (because above check is ineffective in this case)
+			    text = text.substr(0,1).toLocaleUpperCase() + text.substr(1);
+			    last_capitalize1 = true;
+			}
+
+			var len = txt.length - txt1.length + last_guess.length;
+			MInputMethodQuick.sendCommit(text, - len - 1, len + 1);
+			old = last_guess;
+		    }
+
+		}
+		if (old) {
+                    py.call("okboard.k.replace_word", [ old, text ]);
+		    char_count -= old.length;
+		}
             } else {
                 if (rpl_len) {
                     if (preedit_ok) {
@@ -584,7 +623,9 @@ Canvas {
                         MInputMethodQuick.sendCommit(text);
                     }
                 }
-                keyboard.inputHandler.preedit = text;
+		if (preedit_ok) {
+                    keyboard.inputHandler.preedit = text;
+		}
             }
 
             curvepreedit = false // ugly hack :) (force a "onCompleted" on the word prediction list)

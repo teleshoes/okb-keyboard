@@ -277,12 +277,16 @@ Item {
                 sourceComponent: keyboard.inputHandler && layoutRow.layout && !layoutRow.layout.splitActive
                                  ? keyboard.inputHandler.topItem : null
                 */
-                // okboard :
-                sourceComponent: keyboard.inputHandler && layoutRow.layout && !layoutRow.layout.splitActive
-                                 ? ((keyboard.curvepreedit || keyboard.curveerror)?curvePredictionList:keyboard.inputHandler.topItem) : null
+                // okboard (this is ridiculously unreadable but does not work from a function)
+		sourceComponent: (layoutRow.layout && !layoutRow.layout.splitActive)?(
+		 (keyboard.curvepreedit || keyboard.curveerror)?curvePredictionList:(
+			keyboard.inputHandler?keyboard.inputHandler.topItem:null
+		    )
+		):null;
+
                 width: parent.width
                 visible: item !== null
-            }
+	    }
 
             CurveKeyboardBase {
                 id: keyboard
@@ -461,9 +465,12 @@ Item {
                     sourceComponent: keyboard.inputHandler && layoutRow.layout && layoutRow.layout.splitActive
                                      ? keyboard.inputHandler.verticalItem : null
                     */
-                    // okboard
-                    sourceComponent: keyboard.inputHandler && layoutRow.layout && layoutRow.layout.splitActive
-                                     ? (keyboard.curvepreedit?curveVerticalPredictionList:keyboard.inputHandler.verticalItem) : null
+                    // okboard (this is ridiculously unreadable but does not work from a function)
+		    sourceComponent: (layoutRow.layout && layoutRow.layout.splitActive)?(
+			(keyboard.curvepreedit || keyboard.curveerror)?curveVerticalPredictionList:(
+			    keyboard.inputHandler?keyboard.inputHandler.verticalItem:null
+			)
+		    ):null;
 
                     width: geometry.middleBarWidth
                     height: keyboard.height

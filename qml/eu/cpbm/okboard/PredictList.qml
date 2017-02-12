@@ -6,7 +6,7 @@ Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
@@ -23,7 +23,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
@@ -39,8 +39,8 @@ import com.jolla 1.0
 Component {
     TopItem {
         SilicaListView {
-            id: curvePredictionList
-            
+            id: curvePredictionListView
+
             model: ListModel {
                 id: curvePredictionModel
                 ListElement {
@@ -56,7 +56,7 @@ Component {
                     width: headerLabel.width + 2 * Theme.paddingMedium
 		    // width: wpm.width + 2 * Theme.paddingMedium
 
-                    Image {                       
+                    Image {
 			visible: keyboard.wpm == 0
                         id: headerLabel
                         anchors.centerIn: parent
@@ -79,17 +79,25 @@ Component {
                 }
             }
 
-            
+
             Component.onCompleted: {
-                update_model()
+                curvePredictionListView.update_model()
             }
-            
+
+	    Connections {
+		// update display when curve context changes
+
+		target: keyboard
+		onCurvepreeditChanged: { curvePredictionListView.update_model(); }
+		onCurveerrorChanged: { curvePredictionListView.update_model(); }
+	    }
+
             orientation: ListView.Horizontal
             anchors.fill: parent
             header: uselessHeader
             boundsBehavior: Flickable.StopAtBounds
-            
-           
+
+
             delegate: BackgroundItem {
                 onClicked: {
                     if (error) {
@@ -110,7 +118,7 @@ Component {
                     text: formatText(model.text, model.error)
                     font.bold: model.error
                     font.underline: model.error
-                    
+
                     function formatText(text, error) {
                         return text;
                     }
@@ -122,7 +130,7 @@ Component {
                     curvePredictionModel.clear();
                     var message = keyboard.curveerror.replace(/\n.*$/, '')
                     curvePredictionModel.append({'text': message, 'error': true });
-                } else {                    
+                } else {
                     keyboard.get_predict_words(function(result) {
                         curvePredictionModel.clear();
                         if (result && result.length > 0) {
