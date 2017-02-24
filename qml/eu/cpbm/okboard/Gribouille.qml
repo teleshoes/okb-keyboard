@@ -543,7 +543,7 @@ Canvas {
                 } else {
                     // swiping from the start of a word will insert the new word just before
                     // and added space will be added and committed right now (see below)
-                    replace = true
+                    // (removed) replace = true
                     text = text + ' '
                     // user will need to backspace to convert back the word as preedit
                 }
@@ -561,7 +561,6 @@ Canvas {
         }
 
 	var char_count = 0;
-
 
         // Add new word as preedit
         if (text.length > 0) {
@@ -585,7 +584,7 @@ Canvas {
 		    MInputMethodQuick.sendPreedit("", undefined);
 		    keyboard.inputHandler.preedit = "";
 
-		} else if (pos > 0 && last_guess) {
+		} else if (pos >= 0 && last_guess) {
 		    // fallback solution (because jolla keyboard can not do preedits without xt9)
 		    var txt1 = txt;
 		    if (txt1.substr(-1) == ' ') { txt1 = txt1.substr(0, txt1.length - 1); }
