@@ -604,10 +604,9 @@ Item {
     function releaseKey(key) {
 	if (curve.ok) {
             if (curve.curvepreedit) {
-		if (key.key === Qt.Key_Backspace && inputHandler.preedit.length > 0) {
+		if (key.key === Qt.Key_Backspace) {
                     // backspace erases a full word inserted by curve typing
-                    MInputMethodQuick.sendPreedit("", undefined);
-                    inputHandler.preedit = "";
+		    curve.backspace();
 		} else if (key.text.length > 0 && key.text >= 'a' && key.text <= 'z') {
                     // if we type a single letter when in preedit mode caused by curve typing, we insert a space because it's the beginning of a new word
                     autocaps = false // if the first word was autocaps the new one is not

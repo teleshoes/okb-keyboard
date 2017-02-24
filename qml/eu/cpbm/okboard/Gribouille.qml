@@ -471,7 +471,7 @@ Canvas {
     /* try/catch wrapper to display & log errors that occur in QML/js */
     function safeCall(func, args) {
 	try {
-	    func.apply(null, args);
+	    return func.apply(null, args);
 	} catch(err) {
 	    show_error(err.message?err.message:message, false);
 	    log("ERROR in function " + func.name + " (line " + err.lineNumber + "): " + err);
@@ -550,7 +550,7 @@ Canvas {
 
             } else if (pos > 0) { // Add a space if needed
                 var lastc = txt.substr(pos - 1, 1);
-                if (lastc != ' ' && lastc != '-' && lastc != '\'') { MInputMethodQuick.sendCommit(' '); }
+                if (lastc != ' ' && lastc != '-' && lastc != '\'' && ! replace) { MInputMethodQuick.sendCommit(' '); }
                 if (".?!".indexOf(lastc) >= 0) { forceAutocaps = true; }
             }
         } else {
@@ -649,6 +649,41 @@ Canvas {
             py.call("okboard.k.backtrack", [ correlation_id ], function(params) { backtracking_done(params); });
         }
         last_commit = now
+    }
+
+    function backspace() {
+	safeCall(backspace_internal, [ ]);
+    }
+
+    function backspace_internal() {
+	if (curvepreedit) {
+            var preedit_ok = (typeof keyboard.inputHandler.preedit != 'undefined');
+
+	    if (preedit_ok) {
+		MInputMethodQuick.sendPreedit("", undefined);
+                inputHandler.preedit = "";
+	    } else {
+		// simulate preedit removal by hand
+		var txt;
+		var pos = -1;
+		if (MInputMethodQuick.surroundingTextValid) {
+		    txt = MInputMethodQuick.surroundingText;
+		    pos = MInputMethodQuick.cursorPosition;
+		}
+		if (pos > 0) {
+		    var len = 0;
+		    while (pos - len - 1 > 0) {
+			var c = txt[pos - len - 1];
+			if (".?! ".indexOf(c) >= 0) { break; }
+			len ++;
+		    }
+		    if (len > 0) {
+			MInputMethodQuick.sendCommit("", - len, len);
+		    }
+		}
+	    }
+	    curvepreedit = false;
+	}
     }
 
     function backtracking_done(params) {
