@@ -473,7 +473,7 @@ Canvas {
 	try {
 	    return func.apply(null, args);
 	} catch(err) {
-	    show_error(err.message?err.message:message, false);
+	    show_error("JS-ERR: " + (err.message?err.message:message), false);
 	    log("ERROR in function " + func.name + " (line " + err.lineNumber + "): " + err);
 	}
     }
@@ -550,7 +550,7 @@ Canvas {
 
             } else if (pos > 0) { // Add a space if needed
                 var lastc = txt.substr(pos - 1, 1);
-                if (lastc != ' ' && lastc != '-' && lastc != '\'' && ! replace) { MInputMethodQuick.sendCommit(' '); }
+                if (lastc != ' ' && lastc != '-' && lastc != '\'') { MInputMethodQuick.sendCommit(' '); }
                 if (".?!".indexOf(lastc) >= 0) { forceAutocaps = true; }
             }
         } else {
