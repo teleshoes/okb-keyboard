@@ -580,25 +580,35 @@ Canvas {
 		if (preedit_ok) {
 		    // standard implementation with preedit
                     old = keyboard.inputHandler.preedit;
+		    if (old.substr(-1) == ' ') {
+			// if we replace a preedit containing a space, we have to add it back
+			text += " ";
+		    }
                     MInputMethodQuick.sendCommit(text);
 		    MInputMethodQuick.sendPreedit("", undefined);
 		    keyboard.inputHandler.preedit = "";
 
 		} else if (pos >= 0 && last_guess) {
-		    // fallback solution (because jolla keyboard can not do preedits without xt9)
-		    var txt1 = txt;
-		    if (txt1.substr(-1) == ' ') { txt1 = txt1.substr(0, txt1.length - 1); }
 
-		    if (last_guess.toLocaleLowerCase() == txt1.substr(txt1.length - last_guess.length).toLocaleLowerCase()) {
-			if (last_guess != txt1.substr(txt1.length - last_guess.length)) {
+		    // fallback solution (because jolla keyboard can not do preedits without xt9)
+		    var last_len = last_guess.length;
+		    var p = pos;
+		    var offset = 0;
+		    if (p > 0 && txt.substr(p - 1, 1) == ' ') {
+			// cursor is 1 char at the right of the end of the last typed word
+			p --; offset = 1;
+		    }
+
+		    if (p - last_len >= 0 &&
+			last_guess.toLocaleLowerCase() == txt.substr(p - last_len, last_len).toLocaleLowerCase()) {
+			if (last_guess != txt.substr(p - last_len, last_len)) {
 			    // ugly way to detect that we are replacing a word that has been auto-capitalized
 			    // so we have to autocapitalize (because above check is ineffective in this case)
 			    text = text.substr(0,1).toLocaleUpperCase() + text.substr(1);
 			    last_capitalize1 = true;
 			}
 
-			var len = txt.length - txt1.length + last_guess.length;
-			MInputMethodQuick.sendCommit(text, - len - 1, len + 1);
+			MInputMethodQuick.sendCommit(text, - last_len - 1, last_len + 1 - offset);
 			old = last_guess;
 		    }
 
