@@ -81,7 +81,10 @@ class Okboard:
                     try: self.log(m, force_log = True)  # Error are logged even if log is disabled
                     except: pass
                 self.log()  # flush
-                self.last_error = "Error in %s: %s (see logs)" % (func.__qualname__, str(e))  # exception for display in GUI
+                if str(e)[0] == '!': message = str(e)[1:]  # do not append error location for non-error messages
+                else: message = "Error in %s: %s (see logs)" % (func.__qualname__, str(e))  # exception for display in GUI
+                message += " [click to dismiss]"
+                self.last_error = message
                 raise e  # trigger QML error handler
         return wrapper
 
@@ -271,14 +274,14 @@ class Okboard:
         if not init:
             db_version = int(self.predict.db.get_param("version", 0))
             if self.expected_db_version and db_version != self.expected_db_version:
-                message = "Outdated database (%s/%s) -> Resetting all data" % (db_version, self.expected_db_version)
+                message = "!Info: Outdated database (%s/%s) -> User data lost" % (db_version, self.expected_db_version)
                 init = True
             else:
                 current_db_id = self.predict.db.get_param("id", "0")
                 expected_db_id = self.shipped_db_id(self.lang)
                 if expected_db_id and current_db_id != expected_db_id:
                     # this is a bit harsh. The keyboard should nicely ask to the user (or upgrade without losing user data)
-                    message = "New database shipped with RPM (%s/%s) -> Updating & resetting" % (current_db_id, expected_db_id)
+                    message = "!Info: New database shipped with RPM -> User data lost"
                     init = True
 
         if init:
