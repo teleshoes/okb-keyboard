@@ -105,6 +105,8 @@ for file in CurveKeyboardBase.qml okboard.py Gribouille.qml PredictList.qml qmld
     cp -f qml/%{qml_subdir}/$file %{buildroot}/%{qml_maliit_dir}/
 done
 
+patch -o %{buildroot}/%{share_dir}/okboard1.qml plugin/okboard.qml plugin/okboard_2to1.diff
+
 cp plugin/okboard.qml %{buildroot}/%{share_dir}/
 cp plugin/okboard_2to1.diff %{buildroot}/%{share_dir}/
 cp plugin/install_plugin.sh %{buildroot}/%{share_dir}/
@@ -184,6 +186,7 @@ rm -f %{plugin_dir}/okboard.qml
 %{qml_maliit_dir}/VerticalPredictList.qml
 %{share_dir}/okboard.qml
 %{share_dir}/okboard_2to1.diff
+%{share_dir}/okboard1.qml
 %{share_dir}/install_plugin.sh
 %{bin_dir}/okboard-settings
 %{_datadir}/applications/okboard.desktop
