@@ -129,6 +129,10 @@ class Okboard:
             cp.read([ _dist_conf, _default_conf ])
             save = True
 
+        # purge old zip files
+        try: os.unlink(os.path.join(self.local_dir, "okboard-logs.zip"))
+        except: pass
+
         # save if needed
         if not os.path.isfile(self.cpfile): save = True
         for s in [ "main", "default", "portrait", "landscape" ]:
