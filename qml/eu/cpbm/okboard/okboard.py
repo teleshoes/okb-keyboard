@@ -14,6 +14,7 @@ import gzip
 import shutil
 import glob
 import subprocess
+import zipfile
 
 from predict import Predict
 
@@ -449,6 +450,19 @@ class Okboard:
     def stg_about(self):
         return ABOUT.strip() + "\nEngine: %s\nKeyboard: %s\nDB format: %s\nConfiguration format: %s" % \
             (self.predict.get_version(), self.get_version(), self.get_expected_db_version(), self.get_expected_cf_version())
+
+    def stg_zip_logs(self):
+        zipname = os.path.join(self.local_dir, "okboard-logs.zip")
+
+        logfiles = glob.glob(os.path.join(self.local_dir, "*.log*"))  # also include .log.bak files in case of recent rotation
+
+        self.log("Creating logs zip archive:", zipname, logfiles)
+
+        with zipfile.ZipFile(zipname, "w") as z:
+            for logfile in logfiles:
+                z.write(logfile, os.path.basename(logfile))
+
+        return [ "file://" + zipname, "okboard-logs.zip" ]
 
 k = Okboard()
 

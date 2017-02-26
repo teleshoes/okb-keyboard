@@ -101,7 +101,8 @@ mkdir -p %{buildroot}/%{qml_maliit_dir} %{buildroot}/%{share_dir} %{buildroot}/%
 
 ln -sf /usr/share/maliit/plugins/com/jolla/touchpointarray.js %{buildroot}/%{qml_maliit_dir}/touchpointarray.js
 
-for file in CurveKeyboardBase.qml okboard.py Gribouille.qml PredictList.qml qmldir Settings.qml pen.png curves.js VerticalPredictList.qml ; do
+for file in CurveKeyboardBase.qml okboard.py Gribouille.qml PredictList.qml qmldir \
+	    Settings.qml MailLogs.qml pen.png curves.js VerticalPredictList.qml ; do
     cp -f qml/%{qml_subdir}/$file %{buildroot}/%{qml_maliit_dir}/
 done
 
@@ -178,6 +179,7 @@ rm -f %{plugin_dir}/okboard.qml
 %{qml_maliit_dir}/qmldir
 %{qml_maliit_dir}/okboard.py*
 %{qml_maliit_dir}/Settings.qml
+%{qml_maliit_dir}/MailLogs.qml
 %{qml_maliit_dir}/okboard.version
 %{qml_maliit_dir}/db.version
 %{qml_maliit_dir}/cf.version

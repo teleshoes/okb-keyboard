@@ -155,7 +155,7 @@ ApplicationWindow {
                         checked: app.pref_backtrack
                         description: "Correct past mistakes in the current sentence if they become obvious when there is more context available. This is only activated if you continually swipe words. If you take a break between words, it is assumed you will do needed changes manually"
                         onCheckedChanged: {
-                            app.pref_backtrack = st_backtrack.checked
+                            app.pref_backtrack = st_backtrack.checked;
                             py.call("okboard.k.stg_set_backtrack", [ st_backtrack.checked ]);
                         }
                     }
@@ -167,9 +167,35 @@ ApplicationWindow {
                         checked: app.pref_wpm
                         description: "Show typing speed as WPM (Words Per Minute)"
                         onCheckedChanged: {
-                            app.pref_wpm = st_wpm.checked
+                            app.pref_wpm = st_wpm.checked;
                             py.call("okboard.k.stg_set_wpm", [ st_wpm.checked ]);
                         }
+                    }
+
+
+                    SectionHeader {
+                        text: "Feedback"
+                    }
+
+                    Button {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: "Send logs by e-mail"
+                        onPressed: {
+			    var dialog = pageStack.push(Qt.resolvedUrl("MailLogs.qml"));
+			    py.call("okboard.k.stg_zip_logs", [ ], function(result) {
+				dialog.attach(result[0], result[1]);
+			    });
+                        }
+                    }
+
+                    Text {
+			width: column.width * 0.8
+                        color: Theme.secondaryColor
+                        font.family: Theme.fontFamily
+			font.pixelSize: Theme.fontSizeTiny
+                        text: "Send recent logs to OKBoard team in order to help investigate issues or for debugging. You can change destination address if you want to check what information is really sent"
+			wrapMode: Text.WordWrap
+			anchors.horizontalCenter: parent.horizontalCenter
                     }
 
 
