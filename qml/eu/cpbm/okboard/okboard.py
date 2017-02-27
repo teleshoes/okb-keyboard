@@ -455,6 +455,10 @@ class Okboard:
         return ABOUT.strip() + "\nEngine: %s\nKeyboard: %s\nDB format: %s\nConfiguration format: %s" % \
             (self.predict.get_version(), self.get_version(), self.get_expected_db_version(), self.get_expected_cf_version())
 
+    def stg_check_logs(self):
+        logfiles = glob.glob(os.path.join(self.local_dir, "*.log*"))  # also include .log.bak files in case of recent rotation
+        return len(logfiles) > 0
+
     def stg_zip_logs(self):
         zipname = os.path.join(self.local_dir, "okboard-logs.zip")
 

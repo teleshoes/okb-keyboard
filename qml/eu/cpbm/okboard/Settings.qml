@@ -180,6 +180,7 @@ ApplicationWindow {
                     Button {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: "Send logs by e-mail"
+			enabled: app.pref_log
                         onPressed: {
 			    var dialog = pageStack.push(Qt.resolvedUrl("MailLogs.qml"));
 			    py.call("okboard.k.stg_zip_logs", [ ], function(result) {
@@ -193,7 +194,7 @@ ApplicationWindow {
                         color: Theme.secondaryColor
                         font.family: Theme.fontFamily
 			font.pixelSize: Theme.fontSizeTiny
-                        text: "Send recent logs to OKBoard team in order to help investigate issues or for debugging. You can change destination address if you want to check what information is really sent"
+                        text: "Send recent logs to OKBoard team in order to help investigate issues or for debugging.\nYou must first activate logs, then reproduce any issue you want to report and then use this function.\nYou can change destination address if you want to check what information is really sent."
 			wrapMode: Text.WordWrap
 			anchors.horizontalCenter: parent.horizontalCenter
                     }
