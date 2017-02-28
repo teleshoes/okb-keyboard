@@ -466,7 +466,7 @@ class Okboard:
 
         self.log("Creating logs zip archive:", zipname, logfiles)
 
-        with zipfile.ZipFile(zipname, "w") as z:
+        with zipfile.ZipFile(zipname, "w", zipfile.ZIP_DEFLATED) as z:
             for logfile in logfiles:
                 z.write(logfile, os.path.basename(logfile))
 
