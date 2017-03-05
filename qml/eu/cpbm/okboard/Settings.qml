@@ -180,11 +180,18 @@ ApplicationWindow {
                     Button {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: "Send logs by e-mail"
-			enabled: app.pref_log
+			enabled: app.pref_log && app.kb_enabled
                         onPressed: {
-			    var dialog = pageStack.push(Qt.resolvedUrl("MailLogs.qml"));
-			    py.call("okboard.k.stg_zip_logs", [ ], function(result) {
-				dialog.attach(result[0], result[1]);
+			    py.call("okboard.k.stg_check_logs", [ ], function(result) {
+				if (result) {
+				    var dialog = pageStack.push(Qt.resolvedUrl("MailLogs.qml"));
+				    py.call("okboard.k.stg_zip_logs", [ ], function(result) {
+					dialog.attach(result[0], result[1]);
+				    });
+				} else {
+				    // No logs
+				    py.call("okboard.k.popup", [ "Can not send report", "Maybe logs are missing or empty" ]);
+				}
 			    });
                         }
                     }
