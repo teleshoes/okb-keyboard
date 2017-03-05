@@ -15,6 +15,7 @@ import shutil
 import glob
 import subprocess
 import zipfile
+import dbus
 
 from predict import Predict
 
@@ -248,9 +249,24 @@ class Okboard:
         txt = ' '.join([ str(x[1]) for x in sorted(jsargs.items(), key = lambda x: int(x[0])) ])
         self.log('QML: ' + txt)
 
+    def _resolve_lang(self, lang):
+        # language name are in fact layout names and can have strings prepended (e.g. arrow keyboard from tmi)
+        # this function finds the real language id for okboard
+        all_languages = [ ]
+        for path in [ self.local_dir, Okboard.SHARE_PATH ]:  # packaged language or language files manually copied to .local/share/okboard
+            all_languages.extend(glob.glob(os.path.join(path, "predict-*.db")))
+        all_languages = set([ os.path.basename(x)[8:-3] for x in all_languages if x ])
+
+        if lang in all_languages: return lang  # exact match
+        for cur_lang in all_languages:
+            if lang.startwith(cur_lang): return cur_lang
+        return None
+
     def _set_context(self, lang, orientation):
         """ sets language and try to load DB """
         self._cf_cache = dict()
+
+        lang = self._resolve_lang(lang)
 
         self.lang = lang
         self.orientation = orientation
@@ -260,7 +276,7 @@ class Okboard:
         else:
             self.predict.set_dbfile(new_dbfile)
 
-        if not self.lang or len(self.lang) != 2: return
+        if not self.lang: return
 
         # if self.test_mode:
         #     self.predict.load_db()  # no error or version management in test mode
@@ -457,7 +473,10 @@ class Okboard:
 
     def stg_check_logs(self):
         logfiles = glob.glob(os.path.join(self.local_dir, "*.log*"))  # also include .log.bak files in case of recent rotation
-        return len(logfiles) > 0
+
+        total_size = sum([ os.stat(f).st_size for f in logfiles ])
+
+        return len(logfiles) > 0 and total_size > 0
 
     def stg_zip_logs(self):
         zipname = os.path.join(self.local_dir, "okboard-logs.zip")
@@ -471,6 +490,33 @@ class Okboard:
                 z.write(logfile, os.path.basename(logfile))
 
         return [ "file://" + zipname, "okboard-logs.zip" ]
+
+    def popup(self, title, body):
+        bus = dbus.SessionBus()
+        object = bus.get_object('org.freedesktop.Notifications', '/org/freedesktop/Notifications')
+        interface = dbus.Interface(object, 'org.freedesktop.Notifications')
+
+        app_name = os.path.basename(__file__)
+        icon = ""
+
+        hints = dict()
+        hints["x-nemo-owner"] = app_name
+        hints["x-nemo-preview-body"] = body
+        hints["x-nemo-preview-summary"] = title
+        hints["x-preview-icon"] = icon
+        hints["transient"] = True
+        expire = 0
+
+        interface.Notify(app_name,
+                         0,
+                         icon,
+                         title,
+                         body,
+                         dbus.Array(["default", ""]),  # apparaissent dans la notification
+                         dbus.Dictionary(hints,
+                                         signature='sv'),
+                         expire)
+
 
 k = Okboard()
 
