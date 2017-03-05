@@ -91,6 +91,8 @@ Canvas {
     property int line_width: 10;
     property int last_pos: -1;
 
+    property string kb_lang: "";
+
     CurveKB {
         id: curveimpl
         onMatchingDone: { matching_done(candidates); }
@@ -216,8 +218,12 @@ Canvas {
 	    // WPM indicator
 	    show_wpm = (conf['show_wpm']?true:false); // cast to boolean :)
 
+	    // orientation disable
             conf_ok = true;
             orientation_disable =  conf['disable']
+
+	    // language
+	    kb_lang = conf['kb_lang'];
 
         } else {
             conf_ok = false;
@@ -261,6 +267,7 @@ Canvas {
             started = false
         }
         lastPoints = [];
+	curveimpl.resetCurve();
     }
 
     function done(register) {
@@ -406,7 +413,7 @@ Canvas {
                     curve.layout = "--";
 
                 } else if (layout != curve.layout) {
-                    var filename = local_dir + "/" + layout + ".tre";
+                    var filename = local_dir + "/" + (kb_lang || layout) + ".tre";
                     log("Loading word tree: " + filename);
                     curve.ok = curveimpl.loadTree(filename);
                     curve.layout = layout;

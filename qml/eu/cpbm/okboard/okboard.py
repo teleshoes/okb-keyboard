@@ -177,6 +177,7 @@ class Okboard:
 
         result["curve_params"] = json.dumps(params)
         result["disable"] = mybool(params.get("disable_orientation", False))
+        result["kb_lang"] = self.lang
 
         if only_if_modified and result == self.last_conf: return dict(unchanged = True)
         self.last_conf = dict(result)
@@ -254,12 +255,12 @@ class Okboard:
         # this function finds the real language id for okboard
         all_languages = [ ]
         for path in [ self.local_dir, Okboard.SHARE_PATH ]:  # packaged language or language files manually copied to .local/share/okboard
-            all_languages.extend(glob.glob(os.path.join(path, "predict-*.db")))
-        all_languages = set([ os.path.basename(x)[8:-3] for x in all_languages if x ])
+            all_languages.extend(glob.glob(os.path.join(path, "predict-*.db*")))
+        all_languages = set([ os.path.basename(x)[8:].split('.')[0] for x in all_languages if x ])
 
         if lang in all_languages: return lang  # exact match
         for cur_lang in all_languages:
-            if lang.startwith(cur_lang): return cur_lang
+            if lang.startswith(cur_lang): return cur_lang
         return None
 
     def _set_context(self, lang, orientation):
@@ -269,14 +270,14 @@ class Okboard:
         lang = self._resolve_lang(lang)
 
         self.lang = lang
+        if not self.lang: return
+
         self.orientation = orientation
         new_dbfile = os.path.join(self.local_dir, "predict-%s.db" % lang)
         if new_dbfile and self.predict.db and self.predict.dbfile == new_dbfile:
             pass  # no change, no need to reload
         else:
             self.predict.set_dbfile(new_dbfile)
-
-        if not self.lang: return
 
         # if self.test_mode:
         #     self.predict.load_db()  # no error or version management in test mode
