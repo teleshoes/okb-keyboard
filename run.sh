@@ -32,6 +32,7 @@ done
 # set up maliit configuration file
 mkdir -p tmp
 conffile="$HOME/.config/maliit.org/server.conf"
+mkdir -p "$(dirname "$conffile")"
 cat "$mydir/server.conf" | sed 's+^paths=.*+paths='"$mydir/tmp"'+' | tee "$conffile"
 
 # set up maliit plugin QML file
