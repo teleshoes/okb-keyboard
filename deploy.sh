@@ -1,4 +1,4 @@
-#! /bin/sh -e
+#! /bin/bash -e
 # install packages to device (obviously needs ssh key to nemo & root accounts)
 
 ARCH="armv7hl"
@@ -24,12 +24,10 @@ cd `dirname "$0"`
 
 arch=`ssh nemo@$device uname -m`
 case "$arch" in
-    armv7l) ARCH="armv7hl" ; break ;;  # Jolla phone
-    x86_64) ARCH="i486" ; break ;; # Jolla tablet
+    armv7l|aarch64) ARCH="armv7hl" ;;  # Jolla phone
+    x86_64) ARCH="i486" ;; # Jolla tablet
     *) echo "Unknown device ($arch)" ; exit 1 ; break ;;
 esac
-
-rsync -av --include 'okb*' $HOME/rpmbuild/RPMS/ nemo@$device:rpmbuild/RPMS/
 
 rpmf() {
     RPMS="$*"
@@ -37,7 +35,7 @@ rpmf() {
     for rpm in $RPMS; do
 	arch="$ARCH"
 	echo "$rpm" | grep lang >/dev/null && arch="noarch"
-	RPM_FILES="${RPM_FILES}/home/nemo/rpmbuild/RPMS/$arch/$rpm-$VERSION-$RELEASE.$arch.rpm "
+	RPM_FILES="$HOME/rpmbuild/RPMS/$arch/$rpm-$VERSION-$RELEASE.$arch.rpm "
 	ssh root@$device "rpm -q $rpm && rpm -e $rpm" || true
     done
 }
@@ -48,8 +46,16 @@ rpmf okboard okb-lang-en okb-lang-fr okb-engine
 [ -n "$full" ] && RPM_FILES="${rpmfull}"
 
 if [ -z "$uninstall" ] ; then
-    echo "Path: $RPM_FILES"
+    TMP="/tmp"
+    echo "Packages: $RPM_FILES"
+    echo "Temporary install dir: $TMP"
 
-    ssh root@$device "rpm -i $RPM_FILES"
+    scp $RPM_FILES "nemo@$device:$TMP/"
+
+    device_files=
+    for rpm in $RPM_FILES ; do
+	device_files="${device_files}$TMP/$(basename "$rpm") "
+    done
+
+    ssh root@$device "rpm -i $device_files && rm -vf $device_files"
 fi
-
