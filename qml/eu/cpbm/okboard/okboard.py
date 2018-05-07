@@ -143,7 +143,8 @@ class Okboard:
 
         if save:
             if expected_cf_version: cp["main"]["cf_version"] = str(expected_cf_version)
-            cp["main"]["verbose"] = cp["main"]["log"] = "1" if test_mode else "0"
+            cp["main"]["verbose"] = "1" if test_mode else "0"
+            cp["main"]["log"] = "1"
             cp["main"]["debug"] = "0"
             with open(self.cpfile, 'w') as f: cp.write(f)
 
@@ -165,7 +166,7 @@ class Okboard:
         # default parameters
         result = dict(config_dir = self.config_dir,
                       local_dir = self.local_dir,
-                      log = self.cf("log", 0, mybool),
+                      log = self.cf("log", 1, mybool),
                       debug = self.cf("debug", 0, mybool),
                       show_wpm = self.cf("show_wpm", 1 if self.test_mode else 0, mybool))
 
