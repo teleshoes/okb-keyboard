@@ -36,7 +36,7 @@ import org.nemomobile.configuration 1.0
 import com.jolla.keyboard 1.0
 import Sailfish.Silica 1.0
 import com.jolla.keyboard.translations 1.0
-import org.nemomobile.dbus 1.0
+import Nemo.DBus 2.0
 import eu.cpbm.okboard 1.0
 import Sailfish.Silica.private 1.0 as SilicaPrivate // SFOS2
 
