@@ -291,7 +291,7 @@ Item {
                 id: curveVerticalPredictionList
             }
 	    /* --- okboard add end --- */
-	    
+
             // FIXME: don't unload item when changing temporarily to basic handler
             Loader {
                 id: topItem
@@ -307,7 +307,7 @@ Item {
 		    )
 		):null;
 		/* --- okboard add end --- */
-		
+
                 width: parent.width
                 visible: item !== null
             }

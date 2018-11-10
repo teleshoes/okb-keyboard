@@ -760,6 +760,10 @@ Item { // <- okboard replace SwipeGestureArea (we are doing our own swipe handli
     function clearError() {
 	curve.clearError();
     }
+
+    function cancelGesture() {
+	// expose this function because it is called from LanguageSelectionPopup
+    }
     /* --- okboard add end --- */
 
 }
