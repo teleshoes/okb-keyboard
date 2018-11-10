@@ -33,13 +33,12 @@ import com.meego.maliitquick 1.0
 import com.jolla.keyboard 1.0
 import org.nemomobile.configuration 1.0
 import "touchpointarray.js" as ActivePoints
-import eu.cpbm.okboard 1.0
-import com.jolla 1.0
 
-// curve typing
-import "curves.js" as InProgress
+import eu.cpbm.okboard 1.0 // okboard add
+import com.jolla 1.0 // okboard add
+import "curves.js" as InProgress // okboard add
 
-Item {
+Item { // <- okboard replace SwipeGestureArea (we are doing our own swipe handling)
     id: keyboard
 
     property Item layout
@@ -58,12 +57,14 @@ Item {
                                           && (typeof inputHandler.preedit !== "string"
                                               || inputHandler.preedit.length === 0))
     readonly property bool isShiftLocked: shiftState === ShiftState.LockedShift
+    readonly property alias languageSelectionPopupVisible: languageSelectionPopup.visible
 
     property bool inSymView
     property bool inSymView2
     // allow chinese input handler to override enter key state
     property bool chineseOverrideForEnter
 
+    property bool silenceFeedback
     property bool layoutChangeAllowed
     property string deadKeyAccent
     property bool shiftKeyPressed
@@ -72,7 +73,7 @@ Item {
     property bool closeSwipeActive
     property int closeSwipeThreshold: Math.max(height*.3, Theme.itemSizeSmall)
 
-    // properties for curve-keyboard
+    // okboard begin
     property bool inCurve
     property int curveLastX
     property int curveLastY
@@ -86,18 +87,30 @@ Item {
     property string preedit: inputHandler.preedit?inputHandler.preedit:""
     property int curveCount
     property int curveIndex
+    // okboard end
 
-    property QtObject emptyAttributes: Item {
+    property QtObject nextLayoutAttributes: QtObject {
         property bool isShifted
         property bool inSymView
         property bool inSymView2
         property bool isShiftLocked
         property bool chineseOverrideForEnter
+
+        function update(layout) {
+            // Figure out what state we want to animate the next layout in
+            isShifted = keyboard.shouldUseAutocaps(layout)
+            inSymView = false
+            inSymView2 = false
+            isShiftLocked = false
+            chineseOverrideForEnter = keyboard.chineseOverrideForEnter
+        }
     }
 
     // Can be changed to PreeditTestHandler to have another mode of input
     property Item inputHandler: InputHandler {
     }
+
+    readonly property bool swipeGestureIsSafe: !releaseTimer.running
 
     height: layout ? layout.height : 0
     onLayoutChanged: if (layout) layout.parent = keyboard
@@ -111,6 +124,11 @@ Item {
         id: popper
         z: 10
         target: lastPressedKey
+        onExpandedChanged: {
+            if (expanded) {
+                keyboard.cancelGesture()
+            }
+        }
     }
 
     LanguageSelectionPopup {
@@ -124,6 +142,11 @@ Item {
     }
 
     Timer {
+        id: releaseTimer
+        interval: 300
+    }
+
+    Timer {
         id: languageSwitchTimer
         interval: 500
         onTriggered: {
@@ -131,12 +154,16 @@ Item {
                 var point = ActivePoints.findByKeyId(Qt.Key_Space)
                 languageSelectionPopup.show(point)
             }
-
-            // curve kb
-            resetCurve()
         }
     }
 
+    Timer {
+        id: autocapsTimer
+        interval: 1
+        onTriggered: applyAutocaps()
+    }
+
+    /* --- okboard add begin --- */
     Timer {
         id: curveDisableTimer
         interval: 400  // a bit smaller than Popper timer to make sure curve is disabled when selecting an item in the Popper
@@ -144,11 +171,11 @@ Item {
             resetCurve()
         }
     }
+    /* --- okboard add end --- */
 
     QuickPick {
         id: quickPick
     }
-
 
     Connections {
         target: MInputMethodQuick
@@ -164,7 +191,7 @@ Item {
         onFocusTargetChanged: {
             if (activeEditor) {
                 resetKeyboard()
-                applyAutocaps()
+                autocapsTimer.start() // focus change may come before updated context, delay handling
             }
         }
         onInputMethodReset: {
@@ -178,11 +205,14 @@ Item {
         defaultValue: false
     }
 
+    // okboard begin
     Gribouille {
         id: curve
         opacity: 1
         anchors.fill: parent
     }
+    // okboard end
+
 
     MouseArea {
         enabled: useMouseEvents.value
@@ -217,8 +247,16 @@ Item {
         }
 
         closeSwipeActive = true
+        silenceFeedback = false
         pressTimer.start()
 
+	/* okboard remove
+        for (var i = 0; i < touchPoints.length; i++) {
+            var point = ActivePoints.addPoint(touchPoints[i])
+            updatePressedKey(point)
+        }
+	*/
+	/* --- okboard add begin --- */
         if (! inCurve) {
             // curve typing: take over multi-touch operations
 
@@ -226,10 +264,8 @@ Item {
                 var point = ActivePoints.addPoint(touchPoints[i])
                 updatePressedKey(point, true)
             }
-
         }
 
-        // curve typing
         if (curve.ok) {
             if (! curve.keys_ok) {
                 dumpKeys();
@@ -266,8 +302,7 @@ Item {
         } else {
             resetCurve();
         }
-        // curve typing end
-
+	/* --- okboard add end --- */
     }
 
     function handleUpdated(touchPoints) {
@@ -276,8 +311,8 @@ Item {
             return
         }
 
-        // curve typing
-        if (inCurve) {
+	/* --- okboard add begin --- */
+	if (inCurve) {
             for(var i = 0; i < touchPoints.length; i++) {
                 var id = touchPoints[i].pointId;
 
@@ -304,7 +339,7 @@ Item {
             }
             if (disablePopper) { return; }
         }
-        // curve typing end
+	/* --- okboard add end --- */
 
         for (var i = 0; i < touchPoints.length; i++) {
             var incomingPoint = touchPoints[i]
@@ -315,39 +350,43 @@ Item {
             point.x = incomingPoint.x
             point.y = incomingPoint.y
 
-            if (ActivePoints.array.length === 1
-                    && closeSwipeActive
-                    && pressTimer.running
-                    && (point.y - point.startY > closeSwipeThreshold)) {
-                MInputMethodQuick.userHide()
-                if (point.pressedKey) {
-                    inputHandler._handleKeyRelease()
-                    point.pressedKey.pressed = false
+            if (ActivePoints.array.length === 1 && closeSwipeActive && pressTimer.running) {
+                var yDiff = point.y - point.startY
+                silenceFeedback = (yDiff > Math.abs(point.x - point.startX))
+
+                if (yDiff > closeSwipeThreshold) {
+                    // swiped down to close keyboard
+                    MInputMethodQuick.userHide()
+                    if (point.pressedKey) {
+                        inputHandler._handleKeyRelease()
+                        point.pressedKey.pressed = false
+                    }
+                    lastPressedKey = null
+                    pressTimer.stop()
+                    languageSwitchTimer.stop()
+                    ActivePoints.remove(point)
+                    return
                 }
-                lastPressedKey = null
-                pressTimer.stop()
-                languageSwitchTimer.stop()
-                ActivePoints.remove(point)
-                return
+            } else {
+                silenceFeedback = false
             }
 
             if (popper.expanded && point.pressedKey === lastPressedKey) {
                 popper.setActiveCell(point.x, point.y)
             } else {
-                updatePressedKey(point, false)
+                updatePressedKey(point)
             }
         }
-
     }
 
-    function updatePressedKey(point, play_sound) {
+    function updatePressedKey(point) {
         var key = keyAt(point.x, point.y)
         if (point.pressedKey === key)
             return
 
-        buttonPressEffect.play()
+        if (!silenceFeedback) buttonPressEffect.play()
 
-        if (key && play_sound) {
+        if (key && !silenceFeedback) {
             if (typeof key.keyType !== 'undefined' && key.keyType === KeyType.CharacterKey && key.text !== " ") {
                 SampleCache.play("/usr/share/sounds/jolla-ambient/stereo/keyboard_letter.wav")
             } else {
@@ -355,8 +394,10 @@ Item {
             }
         }
 
-        if (point.pressedKey !== null)
+        if (point.pressedKey !== null) {
+            inputHandler._handleKeyRelease()
             point.pressedKey.pressed = false
+        }
 
         point.pressedKey = key
         if (!point.initialKey) {
@@ -368,6 +409,8 @@ Item {
         lastPressedKey = point.pressedKey
 
         if (point.pressedKey !== null) {
+            // when typing fast with two finger, one finger might be still pressed when the other hits screen.
+            // on that case, trigger input from previous character
             releasePreviousCharacterKey(point)
             point.pressedKey.pressed = true
             inputHandler._handleKeyPress(point.pressedKey)
@@ -377,18 +420,21 @@ Item {
     }
 
     function handleReleased(touchPoints) {
+        releaseTimer.restart()
+
         if (languageSelectionPopup.visible) {
             if (languageSelectionPopup.opening) {
                 languageSelectionPopup.hide()
             } else {
                 cancelAllTouchPoints()
                 languageSelectionPopup.hide()
-                canvas.layoutRow.switchLayout(languageSelectionPopup.activeCell)
+                canvas.switchLayout(languageSelectionPopup.activeCell)
 
-                // curve kb
-                if (languageSelectionPopup.activeCell > 0) {
+		/* --- okboard add begin --- */
+		if (languageSelectionPopup.activeCell > 0) {
                     curve.updateContext(canvas.layoutModel.get(languageSelectionPopup.activeCell).layout);
                 }
+		/* --- okboard add end --- */
 
                 return
             }
@@ -408,7 +454,7 @@ Item {
                 popper.release()
                 point.pressedKey.pressed = false
             } else {
-                releaseKey(point.pressedKey)
+                triggerKey(point.pressedKey)
             }
 
             if (point.pressedKey.keyType !== KeyType.ShiftKey && !isPressed(KeyType.DeadKey)) {
@@ -426,7 +472,7 @@ Item {
         }
         languageSwitchTimer.stop()
 
-        // curve typing
+	/* --- okboard add begin --- */
         if (inCurve) {
             for(var i = 0; i < touchPoints.length; i++) {
                 var id = touchPoints[i].pointId;
@@ -444,7 +490,7 @@ Item {
                 inCurve = false;
             }
         }
-        // curve typing end
+	/* --- okboard add end --- */
     }
 
     function handleCanceled(touchPoints) {
@@ -452,10 +498,12 @@ Item {
             cancelTouchPoint(touchPoints[i].pointId)
         }
 
-        // curve typing
+	/* --- okboard add begin --- */
         if (inCurve) {
             resetCurve();
         }
+	/* --- okboard add end --- */
+
     }
 
     function keyAt(x, y) {
@@ -486,6 +534,7 @@ Item {
             return
 
         if (point.pressedKey) {
+            inputHandler._handleKeyRelease()
             point.pressedKey.pressed = false
             if (lastPressedKey === point.pressedKey) {
                 lastPressedKey = null
@@ -521,12 +570,13 @@ Item {
         deadKeyAccent = ""
     }
 
-    function applyAutocaps() {
+    function shouldUseAutocaps(layout) {
         if (MInputMethodQuick.surroundingTextValid
                 && MInputMethodQuick.contentType === Maliit.FreeTextContentType
                 && MInputMethodQuick.autoCapitalizationEnabled
                 && !MInputMethodQuick.hiddenText
                 && layout && layout.type === "") {
+
             var position = MInputMethodQuick.cursorPosition
             var text = MInputMethodQuick.surroundingText.substring(0, position)
 
@@ -534,20 +584,28 @@ Item {
                     || (position == 1 && text[0] === " ")
                     || (position >= 2 && text[position - 1] === " "
                         && ".?!".indexOf(text[position - 2]) >= 0)) {
-                autocaps = true
+                return true
             } else {
-                autocaps = false
+                return false
             }
         } else {
-            autocaps = false
+            return false
         }
+    }
+
+    function applyAutocaps() {
+        autocaps = shouldUseAutocaps(layout)
     }
 
     function cycleShift() {
         if (shiftState === ShiftState.NoShift) {
             shiftState = ShiftState.LatchedShift
         } else if (shiftState === ShiftState.LatchedShift) {
-            shiftState = ShiftState.LockedShift
+            if (layout && layout.capsLockSupported) {
+                shiftState = ShiftState.LockedShift
+            } else {
+                shiftState = ShiftState.NoShift
+            }
         } else if (shiftState === ShiftState.LockedShift) {
             shiftState = ShiftState.NoShift
         } else {
@@ -582,10 +640,10 @@ Item {
         }
     }
 
-    function existingCharacterKey(updatedPoint) {
+    function existingCharacterKey(ignoredPoint) {
         for (var i = 0; i < ActivePoints.array.length; i++) {
             var point = ActivePoints.array[i]
-            if (point !== updatedPoint
+            if (point !== ignoredPoint
                     && point.pressedKey
                     && point.pressedKey.keyType === KeyType.CharacterKey) {
                 return point
@@ -593,15 +651,16 @@ Item {
         }
     }
 
-    function releasePreviousCharacterKey(updatedPoint) {
-        var existing = existingCharacterKey(updatedPoint)
+    function releasePreviousCharacterKey(ignoredPoint) {
+        var existing = existingCharacterKey(ignoredPoint)
         if (existing) {
-            releaseKey(existing.pressedKey)
+            triggerKey(existing.pressedKey)
             ActivePoints.remove(existing)
         }
     }
 
-    function releaseKey(key) {
+    function triggerKey(key) {
+	/* --- okboard add begin --- */
 	if (curve.ok) {
             if (curve.curvepreedit) {
 		if (key.key === Qt.Key_Backspace) {
@@ -615,6 +674,7 @@ Item {
             }
 	}
         curve.curvepreedit = false
+	/* --- okboard add end --- */
 
         if (key.keyType !== KeyType.DeadKey) {
             inputHandler._handleKeyClick(key)
@@ -637,6 +697,7 @@ Item {
         }
     }
 
+    /* --- okboard add begin --- */
     // reset curve typing
     function resetCurve() {
         curve.reset()
@@ -699,5 +760,6 @@ Item {
     function clearError() {
 	curve.clearError();
     }
+    /* --- okboard add end --- */
 
 }

@@ -35,10 +35,12 @@ import com.meego.maliitquick 1.0
 import org.nemomobile.configuration 1.0
 import com.jolla.keyboard 1.0
 import Sailfish.Silica 1.0
+import Sailfish.Silica.private 1.0 as SilicaPrivate
 import com.jolla.keyboard.translations 1.0
-import Nemo.DBus 2.0
-import eu.cpbm.okboard 1.0
-import Sailfish.Silica.private 1.0 as SilicaPrivate // SFOS2
+import org.nemomobile.dbus 2.0
+import org.nemomobile.systemsettings 1.0
+
+import eu.cpbm.okboard 1.0 // okboard add
 
 Item {
     id: canvas
@@ -54,8 +56,8 @@ Item {
                                       (MInputMethodQuick.appOrientation == 0 || MInputMethodQuick.appOrientation == 180)
 
     property int activeIndex: -1
-    property variant layoutModel: _layoutModel
-    property variant layoutRow: _layoutRow
+    property var layoutModel: _layoutModel
+    property var layoutRow: _layoutRow
 
     property Item phraseEngine // for hwr
 
@@ -110,6 +112,11 @@ Item {
         keyboard.overriddenLayoutFile = ""
     }
 
+    function switchToPreviousCharacterLayout() {
+        layoutRow.switchToPreviousCharacterLayout()
+    }
+
+
     InputHandlerManager {
         id: handlerManager
     }
@@ -119,8 +126,7 @@ Item {
         path: "/com/jolla/keyboard"
         iface: "com.jolla.keyboard"
 
-        signal clearData
-        onClearData: {
+        function clearData() {
             console.log("got clear data request from dbus")
             _layoutModel.useHandlers([])
             handlerManager.clearHandlerData()
@@ -129,13 +135,29 @@ Item {
         }
     }
 
+    ProfileControl { id: soundSettings}
+
+    Binding {
+        // explicitly turn off playing sound with pulseaudio so bluetooth sets don't try to play sound with zero volume
+        // TODO: follow currently active profile so if e.g. silent overrides touchscreen tones, playing is not tried.
+        target: SampleCache
+        property: "outputEnabled"
+        value: soundSettings.touchscreenToneLevel !== 0
+    }
 
     LayoutModel {
         id: _layoutModel
 
         property var inputHandlers: new Array
 
-        onEnabledLayoutsChanged: updateInputHandlers()
+        onEnabledLayoutsChanged: {
+            if (MInputMethodQuick.active) {
+                _layoutRow.updateLoadersToLayoutAndNeighbours(canvas.activeIndex)
+            }
+
+            updateInputHandlers()
+        }
+
         Component.onCompleted: updateInputHandlers()
 
         function updateInputHandlers() {
@@ -216,7 +238,7 @@ Item {
         id: splitConfig
 
         key: "/sailfish/text_input/split_landscape"
-        defaultValue: true
+        defaultValue: false
     }
 
     Item {
@@ -240,7 +262,6 @@ Item {
             effect: ThemeEffect.PressWeak
         }
 
-	/* SFOS2 */
         SilicaPrivate.GlassBackground {
             width: keyboard.width
             height: inputItems.effectiveHeight
@@ -262,31 +283,34 @@ Item {
                 }
             }
 
-            // okboard
+	    /* --- okboard add begin --- */
             PredictList {
                 id: curvePredictionList
             }
             VerticalPredictList {
                 id: curveVerticalPredictionList
             }
-
+	    /* --- okboard add end --- */
+	    
             // FIXME: don't unload item when changing temporarily to basic handler
             Loader {
                 id: topItem
-                /*
-                sourceComponent: keyboard.inputHandler && layoutRow.layout && !layoutRow.layout.splitActive
+		/* okboard remove
+                sourceComponent: keyboard.inputHandler && layoutRow.layout && layoutRow.layout.useTopItem
                                  ? keyboard.inputHandler.topItem : null
-                */
-                // okboard (this is ridiculously unreadable but does not work from a function)
+		*/
+		/* --- okboard add begin --- */
+		// this is ridiculously unreadable but does not work from a function
 		sourceComponent: (layoutRow.layout && !layoutRow.layout.splitActive)?(
-		 (keyboard.curvepreedit || keyboard.curveerror)?curvePredictionList:(
+		    (keyboard.curvepreedit || keyboard.curveerror)?curvePredictionList:(
 			keyboard.inputHandler?keyboard.inputHandler.topItem:null
 		    )
 		):null;
-
+		/* --- okboard add end --- */
+		
                 width: parent.width
                 visible: item !== null
-	    }
+            }
 
             CurveKeyboardBase {
                 id: keyboard
@@ -304,13 +328,91 @@ Item {
                 width: root.width
                 portraitMode: portraitLayout
                 layout: mode === "common" ? _layoutRow.layout
-                                          : mode === "number" ? (portraitMode ? number_portrait
-                                                                              : number_landscape)
-                                                              : (portraitMode ? phone_portrait
-                                                                              : phone_landscape)
+                                          : mode === "number" ? (number_portrait.visible ? number_portrait
+                                                                                         : number_landscape.item)
+                                                              : (phone_portrait.visible ? phone_portrait
+                                                                                        : phone_landscape.item)
                 layoutChangeAllowed: mode === "common"
+		/* okboard remove
+                thresholdX: swipeGestureIsSafe ? (Theme.startDragDistance * 4.0) : (Theme.startDragDistance * 6.0)
+                thresholdY: Theme.startDragDistance * 1.8
+                swipeEnabled: layoutChangeAllowed && (canvas.layoutModel.enabledCount > 1)
+                allowedDirections: SwipeGestureArea.DirectionLeft | SwipeGestureArea.DirectionRight
+                onSwipeAmountChanged: {
+                    if (gestureInProgress) {
+                        layoutRow.updateManualTransition(swipeAmount)
+                    }
+                }
+                onGestureInProgressChanged: {
+                    if (gestureInProgress) {
+                        // Start loading the new layout
+                        layoutRow.switchLayout(getGestureNextLayoutIndex(), true)
+
+                        // Hide all current popups and prevent key presses during the gesture
+                        cancelAllTouchPoints()
+                    } else {
+                        layoutRow.endManualTransition()
+                    }
+                }
+                onDirectionChanged: {
+                    if (gestureInProgress) {
+                        layoutRow.updateTransitionDirection(getGestureNextLayoutIndex())
+                    }
+                } */
 
                 onModeChanged: layoutRow.layout.visible = mode === "common"
+
+                function getGestureNextLayoutIndex() {
+                    return (direction === SwipeGestureArea.DirectionLeft) ? getRightAdjacentLayoutIndex() : getLeftAdjacentLayoutIndex()
+                }
+
+                function getRightAdjacentLayoutIndex(index) {
+                    // If not argument is provided, work with the current layout index
+                    if (typeof(index) === "undefined") {
+                        index = canvas.activeIndex
+                    }
+
+                    // Try searching for the next one
+                    for (var i = index + 1; i < canvas.layoutModel.count; i++) {
+                        if (canvas.layoutModel.get(i).enabled) {
+                            return i
+                        }
+                    }
+
+                    // Try the lower indexes
+                    for (i = 0; i < index; i++) {
+                        if (canvas.layoutModel.get(i).enabled) {
+                            return i
+                        }
+                    }
+
+                    // Oopsie, there are no other layouts
+                    return index
+                }
+
+                function getLeftAdjacentLayoutIndex(index) {
+                    // If not argument is provided, work with the current layout index
+                    if (typeof(index) === "undefined") {
+                        index = canvas.activeIndex
+                    }
+
+                    // Try searching for the next one
+                    for (var i = index - 1; i >= 0; i--) {
+                        if (canvas.layoutModel.get(i).enabled) {
+                            return i
+                        }
+                    }
+
+                    // Try the lower indexes
+                    for (i = canvas.layoutModel.count - 1; i > index; i--) {
+                        if (canvas.layoutModel.get(i).enabled) {
+                            return i
+                        }
+                    }
+
+                    // Oopsie, there are no other layouts
+                    return index
+                }
 
                 function updateLayoutIfAllowed(denyOverride) {
                     if (allowLayoutChanges) {
@@ -366,7 +468,7 @@ Item {
                     }
 
                     updateInputHandler()
-                    keyboard.updateCurveContext() // okboard
+		    keyboard.updateCurveContext() // okboard add
                 }
 
                 function updateInputHandler() {
@@ -410,16 +512,6 @@ Item {
                     inputHandler.active = true
                 }
 
-		/* SFOS2
-                Rectangle {
-                    anchors.fill: parent
-                    gradient: Gradient {
-                        GradientStop { position: 0; color: Theme.rgba(Theme.highlightBackgroundColor, .15) }
-                        GradientStop { position: 1; color: Theme.rgba(Theme.highlightBackgroundColor, .3) }
-                    }
-                }
-		*/
-
                 InputHandler {
                     id: basicInputHandler
                 }
@@ -430,21 +522,44 @@ Item {
 
                 NumberLayoutPortrait {
                     id: number_portrait
-                    visible: keyboard.mode === "number" && keyboard.portraitMode
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: geometry.isLargeScreen ? 0.6 * geometry.keyboardWidthPortrait
+                                                  : geometry.keyboardWidthPortrait
+                    visible: keyboard.mode === "number" && (keyboard.portraitMode || geometry.isLargeScreen)
                 }
 
-                NumberLayoutLandscape {
+                Loader {
                     id: number_landscape
-                    visible: keyboard.mode === "number" && !keyboard.portraitMode
+                    sourceComponent: (keyboard.mode === "number" && !geometry.isLargeScreen)
+                                     ? landscapeNumberComponent : undefined
+                }
+
+                Component {
+                    id: landscapeNumberComponent
+                    NumberLayoutLandscape {
+                        visible: keyboard.mode === "number" && !number_portrait.visible
+                    }
                 }
 
                 PhoneNumberLayoutPortrait {
                     id: phone_portrait
-                    visible: keyboard.mode === "phone" && keyboard.portraitMode
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: geometry.isLargeScreen ? 0.6 * geometry.keyboardWidthPortrait
+                                                  : geometry.keyboardWidthPortrait
+                    visible: keyboard.mode === "phone" && (keyboard.portraitMode || geometry.isLargeScreen)
                 }
-                PhoneNumberLayoutLandscape {
+
+                Loader {
                     id: phone_landscape
-                    visible: keyboard.mode === "phone" && !keyboard.portraitMode
+                    sourceComponent: (keyboard.mode === "phone" && !geometry.isLargeScreen)
+                                     ? phoneLandscapeComponent : undefined
+                }
+
+                Component {
+                    id: phoneLandscapeComponent
+                    PhoneNumberLayoutLandscape {
+                        visible: keyboard.mode === "phone" && !phone_portrait.visible
+                    }
                 }
 
                 LayoutRow {
@@ -461,17 +576,18 @@ Item {
                 }
 
                 Loader {
-                    /*
+		    /* okboard remove
                     sourceComponent: keyboard.inputHandler && layoutRow.layout && layoutRow.layout.splitActive
                                      ? keyboard.inputHandler.verticalItem : null
-                    */
-                    // okboard (this is ridiculously unreadable but does not work from a function)
+		    */
+		    /* --- okboard add begin --- */
+		    // this is ridiculously unreadable but does not work from a function
 		    sourceComponent: (layoutRow.layout && layoutRow.layout.splitActive)?(
 			(keyboard.curvepreedit || keyboard.curveerror)?curveVerticalPredictionList:(
 			    keyboard.inputHandler?keyboard.inputHandler.verticalItem:null
 			)
 		    ):null;
-
+		    /* --- okboard add end --- */
                     width: geometry.middleBarWidth
                     height: keyboard.height
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -533,6 +649,14 @@ Item {
                 script: {
                     MInputMethodQuick.setScreenRegion(Qt.rect(0, 0, 0, 0))
                     keyboard.resetKeyboard()
+
+                    // If there is a stuck transition, stop it
+                    if (keyboard.gestureInProgress) {
+                        keyboard.cancelGesture()
+                    }
+
+                    // Unload neighbours of current layout to save memory
+                    _layoutRow.updateLoaders([canvas.activeIndex])
                 }
             }
         }
@@ -542,6 +666,16 @@ Item {
 
             ScriptAction {
                 script: {
+                    // If there is a stuck transition, stop it
+		    /* okboard remove
+                    if (keyboard.gestureInProgress) {
+                        keyboard.cancelGesture()
+                    }
+		    */
+
+                    // Load neighbours of current layouts to ensure smooth swipe
+                    _layoutRow.updateLoadersToLayoutAndNeighbours(canvas.activeIndex)
+
                     canvas.visible = true // framework currently initially hides. Make sure visible
                     keyboard.updateLayout()
                     areaUpdater.start() // ensure height has updated before sending it

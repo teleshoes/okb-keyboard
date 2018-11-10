@@ -17,11 +17,13 @@ ENGINE=$(readlink -f "$ENGINE")
 no_detach=
 dont_reset_conf=
 debug=
+strace=
 while [ -n "$1" ] ; do
     case "$1" in
 	-n) no_detach=1 ;;
 	-c) dont_reset_conf=1 ;;
 	-g) debug=1 ;;
+	-s) strace=1 ;;
 	*) die "usage: "`basename "$0"`" [-n] [-c] [-g]" ;;
     esac
     shift
@@ -33,10 +35,11 @@ done
 mkdir -p tmp
 conffile="$HOME/.config/maliit.org/server.conf"
 mkdir -p "$(dirname "$conffile")"
-cat "$mydir/server.conf" | sed 's+^paths=.*+paths='"$mydir/tmp"'+' | tee "$conffile"
+cat "$mydir/server.conf" | sed 's+^paths=.*+paths='"$mydir/plugin"'+' | tee "$conffile"
 
 # set up maliit plugin QML file
-plugin/install_plugin.sh tmp
+# plugin/install_plugin.sh tmp
+# TODO: replace with patch apply
 
 # environment
 OKBOARD_TEST_DIR=/tmp  # let's use /tmp (beware of tmpfs ram usage)
@@ -58,9 +61,11 @@ SO="$ENGINE/curve/build/libcurveplugin.so"
 ln -sf "$SO" "$qmldir/libcurveplugin.so"
 
 # symlink to a needed jolla-keyboard file
-N="touchpointarray.js"
-JS="/usr/share/maliit/plugins/com/jolla/$N"
-[ -L "$qmldir/$N" ] || ln -vs "$JS" "$qmldir/$N"
+FILES="touchpointarray.js"
+for N in $FILES ; do
+    JS="/usr/share/maliit/plugins/com/jolla/$N"
+    [ -L "$qmldir/$N" ] || ln -vs "$JS" "$qmldir/$N"
+done
 
 # symlink to python stuff (avoids declaring new paths)
 for py in $ENGINE/*.py ; do
@@ -94,6 +99,8 @@ if [ -n "$debug" ] ; then
 elif [ -n "$no_detach" ] ; then
     # no detach
     maliit-server 2>&1
+elif [ -n "$strace" ] ; then
+    strace -f maliit-server > /tmp/maliit-strace.log 2>&1
 else
     maliit-server &
 fi
