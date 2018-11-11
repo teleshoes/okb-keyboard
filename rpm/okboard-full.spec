@@ -1,6 +1,6 @@
 Name:       okboard-full
 Summary:    OKboard (Jolla magic keyboard)
-Version:    0.6.16
+Version:    0.6.17
 Release:    1
 Group:      System/GUI/Other
 License:    BSD-like + LGPLv2.1
@@ -11,7 +11,7 @@ Source2:    okb-lang-fr.tar.bz2
 Source3:    okb-lang-en.tar.bz2
 Source4:    okb-lang-nl.tar.bz2
 Requires:   pyotherside-qml-plugin-python3-qt5 >= 1.2.0
-Requires:   jolla-keyboard >= 0.5.5
+Requires:   jolla-keyboard >= 0.7.1
 Requires:   sailfishsilica-qt5 >= 0.10.9
 Requires:   dbus-python3
 BuildRequires:  pkgconfig(Qt5Quick)
@@ -107,12 +107,8 @@ for file in CurveKeyboardBase.qml okboard.py Gribouille.qml PredictList.qml qmld
     cp -f qml/%{qml_subdir}/$file %{buildroot}/%{qml_maliit_dir}/
 done
 
-patch -o %{buildroot}/%{share_dir}/okboard1.qml plugin/okboard.qml plugin/okboard_2to1.diff
-
-cp plugin/okboard.qml %{buildroot}/%{share_dir}/
-cp plugin/okboard_2to1.diff %{buildroot}/%{share_dir}/
-cp plugin/install_plugin.sh %{buildroot}/%{share_dir}/
-
+cp plugin/okboard.qml %{buildroot}/%{plugin_dir}/okboard-plugin.qml  # @todo [qml-patch] %{buildroot}/%{share_dir}/
+# @todo [qml-patch] cp install_plugin.sh %{buildroot}/%{share_dir}/
 cp build/okboard-settings %{buildroot}/%{bin_dir}/
 
 mkdir -p %{buildroot}%{_datadir}/applications %{buildroot}%{_datadir}/icons/hicolor/86x86/apps
@@ -133,7 +129,8 @@ popd
 rm -f /home/nemo/.config/maliit.org/server.conf
 killall maliit-server 2>/dev/null || true
 killall okboard-settings 2>/dev/null || true
-%{share_dir}/install_plugin.sh %{plugin_dir}
+# @todo qml-patch %{share_dir}/install_plugin.sh %{plugin_dir}
+rm -f %{plugin_dir}/okboard.qml  # obsolete plugin name
 
 %postun
 rm -f /home/nemo/.config/maliit.org/server.conf
@@ -141,7 +138,7 @@ killall maliit-server 2>/dev/null || true
 killall okboard-settings 2>/dev/null || true
 if [ $1 = 0 ] ; then  # do not run uninstall script in case of upgrade
     rm -f %{plugin_dir}/okboard-plugin.qml
-    rm -f %{plugin_dir}/okboard.qml  # old plugin name
+    rm -f %{plugin_dir}/okboard.qml  # obsolete plugin name
 fi
 
 %files
@@ -177,6 +174,7 @@ fi
 # keyboard
 %doc okboard-%{version}/README.md okboard-%{version}/LICENSE
 %{qml_maliit_dir}/CurveKeyboardBase.qml
+# ^ @todo [qml-patch] remove
 %{qml_maliit_dir}/Gribouille.qml
 %{qml_maliit_dir}/PredictList.qml
 %{qml_maliit_dir}/touchpointarray.js
@@ -190,10 +188,8 @@ fi
 %{qml_maliit_dir}/pen.png
 %{qml_maliit_dir}/curves.js
 %{qml_maliit_dir}/VerticalPredictList.qml
-%{share_dir}/okboard.qml
-%{share_dir}/okboard_2to1.diff
-%{share_dir}/okboard1.qml
-%{share_dir}/install_plugin.sh
+%{plugin_dir}/okboard-plugin.qml
+# ^ @todo [qml-patch] remove
 %{bin_dir}/okboard-settings
 %{_datadir}/applications/okboard.desktop
 %{_datadir}/icons/hicolor/86x86/apps/okboard.png
