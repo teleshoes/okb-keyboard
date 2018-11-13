@@ -40,7 +40,7 @@ import com.jolla.keyboard.translations 1.0
 import org.nemomobile.dbus 2.0
 import org.nemomobile.systemsettings 1.0
 
-import eu.cpbm.okboard 1.0 // okboard add
+import eu.cpbm.okboard 1.0 // okboard
 
 Item {
     id: canvas
@@ -283,14 +283,14 @@ Item {
                 }
             }
 
-	    /* --- okboard add begin --- */
+	    /* --- okboard begin --- */
             PredictList {
                 id: curvePredictionList
             }
             VerticalPredictList {
                 id: curveVerticalPredictionList
             }
-	    /* --- okboard add end --- */
+	    /* --- okboard end --- */
 
             // FIXME: don't unload item when changing temporarily to basic handler
             Loader {
@@ -299,14 +299,14 @@ Item {
                 sourceComponent: keyboard.inputHandler && layoutRow.layout && layoutRow.layout.useTopItem
                                  ? keyboard.inputHandler.topItem : null
 		*/
-		/* --- okboard add begin --- */
+		/* --- okboard begin --- */
 		// this is ridiculously unreadable but does not work from a function
 		sourceComponent: (layoutRow.layout && !layoutRow.layout.splitActive)?(
 		    (keyboard.curvepreedit || keyboard.curveerror)?curvePredictionList:(
 			keyboard.inputHandler?keyboard.inputHandler.topItem:null
 		    )
 		):null;
-		/* --- okboard add end --- */
+		/* --- okboard end --- */
 
                 width: parent.width
                 visible: item !== null
@@ -468,7 +468,7 @@ Item {
                     }
 
                     updateInputHandler()
-		    keyboard.updateCurveContext() // okboard add
+		    keyboard.updateCurveContext() // okboard
                 }
 
                 function updateInputHandler() {
@@ -580,14 +580,14 @@ Item {
                     sourceComponent: keyboard.inputHandler && layoutRow.layout && layoutRow.layout.splitActive
                                      ? keyboard.inputHandler.verticalItem : null
 		    */
-		    /* --- okboard add begin --- */
+		    /* --- okboard begin --- */
 		    // this is ridiculously unreadable but does not work from a function
 		    sourceComponent: (layoutRow.layout && layoutRow.layout.splitActive)?(
 			(keyboard.curvepreedit || keyboard.curveerror)?curveVerticalPredictionList:(
 			    keyboard.inputHandler?keyboard.inputHandler.verticalItem:null
 			)
 		    ):null;
-		    /* --- okboard add end --- */
+		    /* --- okboard end --- */
                     width: geometry.middleBarWidth
                     height: keyboard.height
                     anchors.horizontalCenter: parent.horizontalCenter
